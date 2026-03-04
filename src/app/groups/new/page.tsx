@@ -39,52 +39,90 @@ export default function NewGroup() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="flex items-center gap-4 p-4 border-b border-zinc-800">
-        <Link href="/dashboard" className="text-zinc-400 hover:text-white">← Back</Link>
-        <h1 className="font-bold text-xl">Create Group</h1>
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.28),transparent_55%),radial-gradient(circle_at_bottom,rgba(129,140,248,0.28),transparent_55%)] opacity-80" />
+
+      <header className="border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 text-sm">
+          <Link href="/dashboard" className="text-slate-400 hover:text-slate-100">
+            ← Back
+          </Link>
+          <span className="text-xs text-slate-600">/</span>
+          <h1 className="text-sm font-medium text-slate-100">Create group</h1>
+        </div>
       </header>
 
-      <main className="max-w-lg mx-auto p-4 space-y-6">
-        <div className="space-y-2">
-          <Label>Group Name</Label>
-          <Input
-            placeholder="Bali Trip 2025"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            className="bg-zinc-900 border-zinc-700"
-          />
-        </div>
+      <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-10 pt-6">
+        <section className="max-w-xl">
+          <h2 className="text-xl font-semibold tracking-tight">New group</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Give your group a name and add the wallets of everyone who&apos;s splitting with you.
+          </p>
+        </section>
 
-        <div className="space-y-2">
-          <Label>Members (wallet addresses)</Label>
-          {members.map((m, i) => (
-            <div key={i} className="flex gap-2">
+        <section className="max-w-xl rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.9)] backdrop-blur-xl">
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label>Group name</Label>
               <Input
-                placeholder="0x..."
-                value={m}
-                onChange={e => updateMember(i, e.target.value)}
-                className="bg-zinc-900 border-zinc-700"
+                placeholder="Bali Trip 2025"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
               />
-              {members.length > 1 && (
-                <Button variant="ghost" size="sm" onClick={() => removeMember(i)}>✕</Button>
-              )}
             </div>
-          ))}
-          <Button variant="outline" size="sm" onClick={addMember} className="border-zinc-700">
-            + Add Member
-          </Button>
-        </div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+            <div className="space-y-3">
+              <div className="flex items-end justify-between gap-2">
+                <div className="space-y-1">
+                  <Label>Members (wallet addresses)</Label>
+                  <p className="text-[11px] text-slate-500">
+                    Paste Base-compatible wallet addresses. Invalid rows are ignored.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addMember}
+                  className="h-8 rounded-full border-slate-700/80 bg-slate-900/60 px-3 text-[11px] text-slate-200 hover:border-sky-400/80 hover:bg-slate-900"
+                >
+                  + Add member
+                </Button>
+              </div>
 
-        <Button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700"
-        >
-          {loading ? 'Creating on-chain...' : 'Create Group'}
-        </Button>
+              <div className="space-y-2">
+                {members.map((m, i) => (
+                  <div key={i} className="flex gap-2">
+                    <Input
+                      placeholder="0x..."
+                      value={m}
+                      onChange={(e) => updateMember(i, e.target.value)}
+                    />
+                    {members.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeMember(i)}
+                        className="h-10 rounded-xl px-2 text-xs text-slate-400 hover:bg-slate-800/80 hover:text-slate-100"
+                      >
+                        ✕
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {error && <p className="text-xs text-red-400">{error}</p>}
+
+            <Button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="mt-2 h-10 w-full rounded-full bg-linear-to-r from-sky-500 via-emerald-400 to-indigo-500 text-sm font-medium text-slate-950 shadow-[0_20px_60px_rgba(56,189,248,0.7)] hover:from-sky-400 hover:via-emerald-300 hover:to-indigo-400 disabled:opacity-60"
+            >
+              {loading ? 'Creating onchain…' : 'Create group'}
+            </Button>
+          </div>
+        </section>
       </main>
     </div>
   )
