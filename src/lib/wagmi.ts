@@ -1,6 +1,6 @@
 import { createConfig, http } from 'wagmi'
 import { baseSepolia, base } from 'wagmi/chains'
-import { coinbaseWallet } from 'wagmi/connectors'
+import { coinbaseWallet, injected, metaMask } from 'wagmi/connectors'
 
 export const config = createConfig({
   chains: [baseSepolia, base],
@@ -8,8 +8,10 @@ export const config = createConfig({
     coinbaseWallet({
       appName: 'FairSplit',
       appLogoUrl: 'https://fairsplit.vercel.app/logo.png',
-      preference: 'smartWalletOnly', // Forces Smart Wallet (passkey, no extension)
+      preference: 'all', // 'all' allows both Smart Wallet AND Coinbase Extension
     }),
+    metaMask(),
+    injected(), // catches any other browser wallet
   ],
   transports: {
     [baseSepolia.id]: http('https://sepolia.base.org'),

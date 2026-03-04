@@ -2,11 +2,13 @@
 
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 
 export function WalletConnect() {
   const { address, isConnected } = useAccount()
-  const { connect, connectors } = useConnect()
+  const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
+  const [showOptions, setShowOptions] = useState(false)
 
   if (isConnected && address) {
     return (
@@ -21,9 +23,33 @@ export function WalletConnect() {
     )
   }
 
+  if (showOptions) {
+    return (
+      <div className="flex flex-col gap-2">
+        {connectors.map((connector) => (
+          <Button
+            key={connector.uid}
+            onClick={() => {
+              connect({ connector })
+              setShowOptions(false)
+            }}
+            disabled={isPending}
+            variant="outline"
+            className="w-full justify-start gap-2"
+          >
+            {connector.name}
+          </Button>
+        ))}
+        <Button variant="ghost" size="sm" onClick={() => setShowOptions(false)}>
+          Cancel
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <Button
-      onClick={() => connect({ connector: connectors[0] })}
+      onClick={() => setShowOptions(true)}
       className="bg-blue-600 hover:bg-blue-700"
     >
       Connect Wallet
