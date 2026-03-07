@@ -23,3 +23,4 @@ export interface Balance {
   address: string
   amount: bigint // positive = owed, negative = owes
 }
+//type shii
