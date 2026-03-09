@@ -40,21 +40,18 @@ export const FAIRSPLIT_ABI = [
     "outputs": []
   },
   {
-    "name": "getGroup",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [{ "name": "groupId", "type": "uint256" }],
-    "outputs": [{
-      "components": [
-        { "name": "id", "type": "uint256" },
-        { "name": "name", "type": "string" },
-        { "name": "members", "type": "address[]" },
-        { "name": "creator", "type": "address" },
-        { "name": "isActive", "type": "bool" }
-      ],
-      "type": "tuple"
-    }]
-  },
+  name: 'getGroup',
+  type: 'function',
+  stateMutability: 'view',
+  inputs: [{ name: 'groupId', type: 'uint256' }],
+  outputs: [
+    { name: 'id', type: 'uint256' },
+    { name: 'name', type: 'string' },
+    { name: 'members', type: 'address[]' },
+    { name: 'creator', type: 'address' },
+    { name: 'isActive', type: 'bool' },
+  ],
+},
   {
     "name": "getGroupExpenses",
     "type": "function",

@@ -13,8 +13,17 @@ export function useGroups() {
     setLoading(true)
     getUserGroups(address)
       .then(async (ids) => {
-        const groupData = await Promise.all(ids.map(id => getGroup(id)))
-        setGroups(groupData as Group[])
+        const groupData = await Promise.all(ids.map(async (id) => {
+          const g = await getGroup(id)
+          return {
+            id: g[0],
+            name: g[1],
+            members: g[2],
+            creator: g[3],
+            isActive: g[4],
+          } as Group
+        }))
+        setGroups(groupData.filter(g => g.isActive))
       })
       .finally(() => setLoading(false))
   }, [address])
