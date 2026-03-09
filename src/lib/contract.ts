@@ -33,6 +33,13 @@ export const USDC_ABI = [
 export const toUSDC = (amount: number) => parseUnits(amount.toString(), 6)
 export const fromUSDC = (amount: bigint) => Number(amount) / 1_000_000
 
+
+export async function switchToBaseSepolia() {
+  await window.ethereum.request({
+    method: 'wallet_switchEthereumChain',
+    params: [{ chainId: '0x14A34' }], // 84532 in hex = Base Sepolia
+  })
+}
 export async function createGroup(name: string, members: string[]) {
   const hash = await writeContract(config, {
     address: CONTRACT_ADDRESS,

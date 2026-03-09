@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createGroup } from '@/lib/contract'
+import { switchToBaseSepolia } from '@/lib/contract'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,6 +30,7 @@ export default function NewGroup() {
     setLoading(true)
     setError('')
     try {
+      await switchToBaseSepolia()
       await createGroup(name, validMembers)
       router.push('/dashboard')
     } catch (e: any) {
