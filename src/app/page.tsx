@@ -75,3 +75,5 @@ export default function Home() {
     </main>
   )
 }
+
+//smart contract deployed it's time to integrate with the existing fe
