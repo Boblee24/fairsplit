@@ -22,3 +22,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
+//been a while since i pushed something
