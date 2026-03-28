@@ -1,22 +1,63 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useAccount } from 'wagmi'
 import { useBalance } from '@/hooks/useBalances'
-import { settleDebt } from '@/lib/contract'
+import { settleDebt, getGroup, getBalance, fromUSDC } from '@/lib/contract'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 
 export default function SettlePage() {
   const { groupId } = useParams()
   const router = useRouter()
+  const { address } = useAccount()
   const { balance } = useBalance(BigInt(groupId as string))
   const [creditor, setCreditor] = useState('')
+  const [creditors, setCreditors] = useState<{ address: string; balance: number }[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+
+  // Auto-resolve creditors from group members
+// Replace the useEffect in settle/[id]/page.tsx
+
+useEffect(() => {
+  if (!address) return
+  async function resolveCreditors() {
+    try {
+      const result = await getGroup(BigInt(groupId as string)) as any
+
+      // getGroup returns a tuple: [id, name, members, creator, isActive]
+      const members: string[] = Array.isArray(result) ? result[2] : result.members
+
+      if (!members || members.length === 0) return
+
+      const balances = await Promise.all(
+        members.map(async (member: string) => {
+          const bal = await getBalance(BigInt(groupId as string), member) as bigint
+          // int256 comes back as bigint, convert carefully
+          const numBal = Number(bal) / 1_000_000
+          return { address: member, balance: numBal }
+        })
+      )
+
+      const positiveMembers = balances.filter(
+        m => m.balance > 0 && m.address.toLowerCase() !== address.toLowerCase()
+      )
+
+      setCreditors(positiveMembers)
+
+      if (positiveMembers.length === 1) {
+        setCreditor(positiveMembers[0].address)
+      }
+    } catch (e) {
+      console.error('Failed to resolve creditors:', e) // you'll now see exact error
+    }
+  }
+  resolveCreditors()
+}, [groupId, address])
 
   async function handleSettle() {
     if (!creditor.startsWith('0x')) return setError('Enter a valid wallet address')
@@ -74,19 +115,34 @@ export default function SettlePage() {
 
             <section className="space-y-4 rounded-3xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.9)] backdrop-blur-xl">
               <div className="space-y-2">
-                <Label>Creditor wallet address</Label>
-                <Input
-                  placeholder="0x... (person to receive funds)"
-                  value={creditor}
-                  onChange={(e) => setCreditor(e.target.value)}
-                />
+                <Label>Pay to</Label>
+
+                {/* Dropdown if multiple creditors, auto-filled input if one */}
+                {creditors.length > 1 ? (
+                  <select
+                    value={creditor}
+                    onChange={(e) => setCreditor(e.target.value)}
+                    className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-500"
+                  >
+                    <option value="">Select who to pay</option>
+                    {creditors.map((c) => (
+                      <option key={c.address} value={c.address}>
+                        {c.address.slice(0, 6)}...{c.address.slice(-4)} — owed ${c.balance.toFixed(2)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="rounded-md border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-slate-300 break-all">
+                    {creditor || 'Resolving creditor...'}
+                  </div>
+                )}
               </div>
 
               {error && <p className="text-xs text-red-400">{error}</p>}
 
               <Button
                 onClick={handleSettle}
-                disabled={loading}
+                disabled={loading || !creditor}
                 className="mt-1 h-11 w-full rounded-full bg-linear-to-r from-emerald-500 to-sky-400 text-sm font-medium text-slate-950 shadow-[0_24px_70px_rgba(52,211,153,0.7)] hover:from-emerald-400 hover:to-sky-300"
               >
                 {loading ? 'Sending USDC…' : `Pay $${Math.abs(balance).toFixed(2)} USDC`}
