@@ -1,14 +1,10 @@
 import { createConfig, http } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
-import { coinbaseWallet, injected, metaMask } from 'wagmi/connectors'
+import { metaMask, injected } from 'wagmi/connectors'
 
 export const config = createConfig({
   chains: [baseSepolia],
   connectors: [
-    coinbaseWallet({
-      appName: 'FairSplit',
-      preference: 'all',
-    }),
     metaMask(),
     injected(),
   ],

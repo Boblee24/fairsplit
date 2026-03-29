@@ -35,9 +35,11 @@ export const fromUSDC = (amount: bigint) => Number(amount) / 1_000_000
 
 
 export async function switchToBaseSepolia() {
-  await window.ethereum.request({
+  const ethereum = (window as unknown as { ethereum?: { request: (args: unknown) => Promise<unknown> } }).ethereum
+  if (!ethereum) return
+  await ethereum.request({
     method: 'wallet_switchEthereumChain',
-    params: [{ chainId: '0x14A34' }], // 84532 in hex = Base Sepolia
+    params: [{ chainId: '0x14A34' }],
   })
 }
 export async function createGroup(name: string, members: string[]) {
