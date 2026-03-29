@@ -33,8 +33,9 @@ export default function NewGroup() {
       await switchToBaseSepolia()
       await createGroup(name, validMembers)
       router.push('/dashboard')
-    } catch (e: any) {
-      setError(e.message || 'Transaction failed')
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'Group creation failed'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

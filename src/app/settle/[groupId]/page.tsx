@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { useBalance } from '@/hooks/useBalances'
-import { settleDebt, getGroup, getBalance, fromUSDC } from '@/lib/contract'
+import { settleDebt, getGroup, getBalance } from '@/lib/contract'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
@@ -44,7 +44,7 @@ useEffect(() => {
       )
 
       const positiveMembers = balances.filter(
-        m => m.balance > 0 && m.address.toLowerCase() !== address.toLowerCase()
+        m => m.balance > 0 && address && m.address.toLowerCase() !== address.toLowerCase()
       )
 
       setCreditors(positiveMembers)
@@ -67,8 +67,9 @@ useEffect(() => {
       await settleDebt(BigInt(groupId as string), creditor, Math.abs(balance))
       setSuccess(true)
       setTimeout(() => router.push(`/groups/${groupId}`), 2000)
-    } catch (e: any) {
-      setError(e.message || 'Transaction failed')
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'Transaction failed'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
