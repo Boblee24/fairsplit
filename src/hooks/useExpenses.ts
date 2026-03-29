@@ -8,10 +8,12 @@ export function useExpenses(groupId: bigint | undefined) {
 
   useEffect(() => {
     if (!groupId) return
-    setLoading(true)
     getGroupExpenses(groupId)
-      .then(data => setExpenses(data as Expense[]))
-      .finally(() => setLoading(false))
+      .then(data => {
+        setExpenses(data as Expense[])
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [groupId])
 
   return { expenses, loading }

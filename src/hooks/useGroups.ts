@@ -10,9 +10,13 @@ export function useGroups() {
 
   useEffect(() => {
     if (!address) return
-    setLoading(true)
-    getUserGroups(address)
-      .then(async (ids) => {
+    
+    let isMounted = true
+    
+    const fetchGroups = async () => {
+      setLoading(true)
+      try {
+        const ids = await getUserGroups(address)
         const groupData = await Promise.all(ids.map(async (id) => {
           const g = await getGroup(id)
           return {
@@ -23,9 +27,21 @@ export function useGroups() {
             isActive: g[4],
           } as Group
         }))
-        setGroups(groupData.filter(g => g.isActive))
-      })
-      .finally(() => setLoading(false))
+        if (isMounted) {
+          setGroups(groupData.filter(g => g.isActive))
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+    
+    fetchGroups()
+    
+    return () => {
+      isMounted = false
+    }
   }, [address])
 
   return { groups, loading }
