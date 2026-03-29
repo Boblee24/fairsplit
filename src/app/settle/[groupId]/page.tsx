@@ -30,7 +30,7 @@ useEffect(() => {
       const result = await getGroup(BigInt(groupId as string)) as [bigint, string, string[], string, boolean]
 
       // getGroup returns a tuple: [id, name, members, creator, isActive]
-      const members: string[] = Array.isArray(result) ? result[2] : result.members
+      const members: string[] = Array.isArray(result) ? result[2] : []
 
       if (!members || members.length === 0) return
 
