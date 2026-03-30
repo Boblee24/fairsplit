@@ -63,8 +63,8 @@ function AddExpenseForm() {
         shares
       )
       router.push(`/groups/${groupId}`)
-    } catch (e: any) {
-      setError(e.message || 'Transaction failed')
+    } catch (e: unknown) {
+      setError((e as Error).message || 'Failed to add expense')
     } finally {
       setLoading(false)
     }

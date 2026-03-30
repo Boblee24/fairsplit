@@ -3,12 +3,44 @@
 import { useParams } from "next/navigation";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useBalance } from "@/hooks/useBalances";
+import { useBasename } from "@/hooks/useBasename";
 import { fromUSDC } from "@/lib/contract";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
+function ExpenseCard({ exp, balance }: { exp: any; balance: number }) {
+  const payerName = useBasename(exp.payer);
+
+  return (
+    <Card key={exp.id.toString()} className="p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="text-sm font-medium text-slate-50">
+            {exp.description}
+          </div>
+          <div className="text-xs text-slate-400">Paid by {payerName}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-sm font-semibold text-slate-50">
+            ${fromUSDC(exp.amount).toFixed(2)}
+          </div>
+          <Badge
+            variant="outline"
+            className={`mt-1 text-[10px] ${
+              balance === 0
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                : "border-slate-600/40 bg-slate-800/50 text-slate-400"
+            }`}
+          >
+            {balance === 0 ? "Settled" : "Pending"}
+          </Badge>
+        </div>
+      </div>
+    </Card>
+  );
+}
 export default function GroupDetail() {
   const { id } = useParams();
   const groupId = BigInt(id as string);
@@ -106,33 +138,7 @@ export default function GroupDetail() {
           )}
 
           {expenses.map((exp) => (
-            <Card key={exp.id.toString()} className="p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="text-sm font-medium text-slate-50">
-                    {exp.description}
-                  </div>
-                  <div className="text-xs text-slate-400">
-                    Paid by {exp.payer.slice(0, 6)}...{exp.payer.slice(-4)}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold text-slate-50">
-                    ${fromUSDC(exp.amount).toFixed(2)}
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={`mt-1 text-[10px] ${
-                      balance === 0
-                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                        : "border-slate-600/40 bg-slate-800/50 text-slate-400"
-                    }`}
-                  >
-                    {balance === 0 ? "Settled" : "Pending"}
-                  </Badge>
-                </div>
-              </div>
-            </Card>
+            <ExpenseCard key={exp.id.toString()} exp={exp} balance={balance} />
           ))}
         </section>
       </main>
