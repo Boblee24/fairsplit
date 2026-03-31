@@ -145,3 +145,5 @@ export default function GroupDetail() {
     </div>
   );
 }
+
+// This page is mostly static and only fetches data on load, so we can get away with client-side fetching and avoid the complexity of server components for now.
