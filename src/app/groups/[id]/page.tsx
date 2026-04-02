@@ -3,15 +3,14 @@
 import { useParams } from "next/navigation";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useBalance } from "@/hooks/useBalances";
-import { useBasename } from "@/hooks/useBasename";
 import { fromUSDC } from "@/lib/contract";
+import { resolveAddress } from '@/lib/nicknames'
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
 function ExpenseCard({ exp, balance }: { exp: any; balance: number }) {
-  const payerName = useBasename(exp.payer);
 
   return (
     <Card key={exp.id.toString()} className="p-4">
@@ -20,7 +19,7 @@ function ExpenseCard({ exp, balance }: { exp: any; balance: number }) {
           <div className="text-sm font-medium text-slate-50">
             {exp.description}
           </div>
-          <div className="text-xs text-slate-400">Paid by {payerName}</div>
+          <div className="text-xs text-slate-400">Paid by {resolveAddress(exp.payer)}</div>
         </div>
         <div className="text-right">
           <div className="text-sm font-semibold text-slate-50">

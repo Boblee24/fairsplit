@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { addExpense } from '@/lib/contract'
+import { addExpense, getGroup, switchToBaseSepolia } from '@/lib/contract'
 import { uploadReceipt } from '@/lib/pinata'
+import { getGroupMembers } from '@/lib/nicknames'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
-import { switchToBaseSepolia } from '@/lib/contract'
 
 function AddExpenseForm() {
   const router = useRouter()
@@ -19,32 +19,48 @@ function AddExpenseForm() {
 
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
-  const [debtors, setDebtors] = useState([''])
   const [receipt, setReceipt] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const addDebtor = () => setDebtors([...debtors, ''])
-  const updateDebtor = (i: number, val: string) => {
-    const updated = [...debtors]
-    updated[i] = val
-    setDebtors(updated)
-  }
-  const removeDebtor = (i: number) => setDebtors(debtors.filter((_, idx) => idx !== i))
+  // NEW — group members from contract + nicknames
+  const [groupMembers, setGroupMembers] = useState<{ address: string; label: string }[]>([])
+  const [selectedDebtors, setSelectedDebtors] = useState<string[]>([])
 
-  const validDebtors = debtors.filter(d => d.trim().startsWith('0x') && d.trim().length === 42)
-  const sharePerPerson = amount && validDebtors.length > 0
-    ? (parseFloat(amount) / (validDebtors.length + 1)).toFixed(2)
+  // Fetch group members on mount
+  useEffect(() => {
+    async function fetchMembers() {
+      try {
+        const result = await getGroup(BigInt(groupId)) as any
+        const members: string[] = Array.isArray(result) ? result[2] : result.members
+        // Exclude current user — they are the payer
+        const others = members.filter(m => m.toLowerCase() !== address?.toLowerCase())
+        setGroupMembers(getGroupMembers(others))
+      } catch (e) {
+        console.error('Failed to fetch group members', e)
+      }
+    }
+    if (address) fetchMembers()
+  }, [groupId, address])
+
+  function toggleDebtor(addr: string) {
+    setSelectedDebtors(prev =>
+      prev.includes(addr) ? prev.filter(a => a !== addr) : [...prev, addr]
+    )
+  }
+
+  const sharePerPerson = amount && selectedDebtors.length > 0
+    ? (parseFloat(amount) / (selectedDebtors.length + 1)).toFixed(2)
     : '0.00'
 
   async function handleSubmit() {
     if (!description.trim()) return setError('Description is required')
     if (!amount || parseFloat(amount) <= 0) return setError('Enter a valid amount')
-    if (validDebtors.length === 0) return setError('Add at least one valid wallet address')
+    if (selectedDebtors.length === 0) return setError('Select at least one person to split with')
 
     const totalAmount = parseFloat(amount)
-    const share = totalAmount / (validDebtors.length + 1)
-    const shares = validDebtors.map(() => share)
+    const share = totalAmount / (selectedDebtors.length + 1)
+    const shares = selectedDebtors.map(() => share)
 
     setLoading(true)
     setError('')
@@ -59,7 +75,7 @@ function AddExpenseForm() {
         totalAmount,
         description,
         receiptHash,
-        validDebtors,
+        selectedDebtors,
         shares
       )
       router.push(`/groups/${groupId}`)
@@ -112,35 +128,46 @@ function AddExpenseForm() {
             </div>
           </div>
 
-          {/* Debtors */}
+          {/* Debtors — now a checklist instead of address inputs */}
           <div className="space-y-2">
-            <Label>Split with (wallet addresses)</Label>
-            <p className="text-xs text-slate-400">You paid. These people owe you.</p>
-            {debtors.map((d, i) => (
-              <div key={i} className="flex gap-2">
-                <Input
-                  placeholder="0x..."
-                  value={d}
-                  onChange={e => updateDebtor(i, e.target.value)}
-                  className={d.length > 0 && (!d.startsWith('0x') || d.length !== 42) ? 'border-red-500/50' : ''}
-                />
-                {debtors.length > 1 && (
-                  <Button variant="ghost" size="sm" onClick={() => removeDebtor(i)} className="shrink-0 text-slate-400">
-                    ✕
-                  </Button>
-                )}
+            <Label>Split with</Label>
+            <p className="text-xs text-slate-400">You paid. Select who owes you.</p>
+
+            {groupMembers.length === 0 ? (
+              <p className="text-xs text-slate-500">Loading group members...</p>
+            ) : (
+              <div className="space-y-2">
+                {groupMembers.map(member => (
+                  <div
+                    key={member.address}
+                    onClick={() => toggleDebtor(member.address)}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                      selectedDebtors.includes(member.address)
+                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                        : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className={`h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                      selectedDebtors.includes(member.address)
+                        ? 'border-emerald-500 bg-emerald-500'
+                        : 'border-slate-600'
+                    }`}>
+                      {selectedDebtors.includes(member.address) && (
+                        <span className="text-[10px] text-slate-950 font-bold">✓</span>
+                      )}
+                    </div>
+                    <span className="text-sm">{member.label}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={addDebtor} className="border-slate-700 text-slate-300">
-              + Add person
-            </Button>
+            )}
           </div>
 
           {/* Split preview */}
-          {parseFloat(amount) > 0 && validDebtors.length > 0 && (
+          {parseFloat(amount) > 0 && selectedDebtors.length > 0 && (
             <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-3">
               <p className="text-xs text-sky-300">
-                Split {validDebtors.length + 1} ways — each person owes{' '}
+                Split {selectedDebtors.length + 1} ways — each person owes{' '}
                 <span className="font-semibold">${sharePerPerson} USDC</span>
               </p>
             </div>
