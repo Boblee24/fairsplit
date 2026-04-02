@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useBalance } from "@/hooks/useBalances";
-import { fromUSDC } from "@/lib/contract";
+import { fromUSDC, getGroup } from "@/lib/contract";
 import { resolveAddress } from '@/lib/nicknames'
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -45,6 +46,26 @@ export default function GroupDetail() {
   const groupId = BigInt(id as string);
   const { expenses, loading } = useExpenses(groupId);
   const { balance } = useBalance(groupId);
+  const [groupName, setGroupName] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    getGroup(groupId)
+      .then((g) => {
+        if (isMounted) {
+          setGroupName((g[1] as string) || "");
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setGroupName("");
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [groupId]);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50">
@@ -59,7 +80,9 @@ export default function GroupDetail() {
             ← Back
           </Link>
           <span className="text-xs text-slate-600">/</span>
-          <h1 className="text-sm font-medium text-slate-100">Group #{id}</h1>
+          <h1 className="text-sm font-medium text-slate-100">
+            {groupName || `Group #${id}`}
+          </h1>
         </div>
       </header>
 
