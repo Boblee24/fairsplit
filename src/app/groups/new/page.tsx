@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { createGroup } from "@/lib/contract";
 import { switchToBaseSepolia } from "@/lib/contract";
 import { setNickname } from "@/lib/nicknames";
+import { getAccount } from "@wagmi/core";
+import { config } from "@/lib/wagmi";
+import { getAddress, isAddress } from "viem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +16,7 @@ import Link from "next/link";
 export default function NewGroup() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [creatorName, setCreatorName] = useState("");
   const [members, setMembers] = useState([{ address: "", name: "" }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,20 +33,55 @@ export default function NewGroup() {
   // Valid members filter
 
 async function handleSubmit() {
-  if (!name.trim()) return setError("Group name is required");
-  const validMembers = members.filter(
-    (m) => m.address.trim().startsWith("0x") && m.address.trim().length === 42
-  );
-  if (validMembers.length === 0) return setError("Add at least one valid wallet address");
+  const trimmedName = name.trim();
+  if (!trimmedName) return setError("Group name is required");
+
+  const accountAddress = getAccount(config).address;
+  const connectedAddress = accountAddress ? getAddress(accountAddress) : null;
+
+  const uniqueMembers = new Map<string, { address: `0x${string}`; name: string }>();
+  members.forEach((member) => {
+    const rawAddress = member.address.trim();
+    if (!isAddress(rawAddress)) return;
+
+    const normalized = getAddress(rawAddress);
+    if (
+      connectedAddress &&
+      normalized.toLowerCase() === connectedAddress.toLowerCase()
+    ) {
+      return;
+    }
+
+    const key = normalized.toLowerCase();
+    const existing = uniqueMembers.get(key);
+    const trimmedNickname = member.name.trim();
+    if (!existing) {
+      uniqueMembers.set(key, { address: normalized, name: trimmedNickname });
+      return;
+    }
+    if (!existing.name && trimmedNickname) {
+      uniqueMembers.set(key, { ...existing, name: trimmedNickname });
+    }
+  });
+
+  const validMembers = Array.from(uniqueMembers.values());
+  if (validMembers.length === 0) {
+    return setError("Add at least one valid wallet address different from your own");
+  }
+
   setLoading(true);
   setError("");
   try {
     await switchToBaseSepolia();
+    const trimmedCreatorName = creatorName.trim();
+    if (connectedAddress && trimmedCreatorName) {
+      setNickname(connectedAddress, trimmedCreatorName);
+    }
     // Save nicknames before creating group
     validMembers.forEach(m => {
-      if (m.name.trim()) setNickname(m.address.trim(), m.name.trim())
+      if (m.name) setNickname(m.address, m.name)
     })
-    await createGroup(name, validMembers.map(m => m.address.trim()));
+    await createGroup(trimmedName, validMembers.map(m => m.address));
     router.push("/dashboard");
   } catch (e: unknown) {
     const errorMessage =
@@ -87,6 +126,15 @@ async function handleSubmit() {
                 placeholder="Bali Trip 2025"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Your nickname (optional)</Label>
+              <Input
+                placeholder="You in this group"
+                value={creatorName}
+                onChange={(e) => setCreatorName(e.target.value)}
               />
             </div>
 
