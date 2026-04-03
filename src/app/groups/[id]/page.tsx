@@ -10,6 +10,7 @@ import { resolveAddress } from '@/lib/nicknames'
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SettlementHistory } from '@/components/SettlementHistory'
 import Link from "next/link";
 
 function ExpenseCard({ exp, balance }: { exp: any; balance: number }) {
@@ -77,8 +78,10 @@ export default function GroupDetail() {
     try {
       await deactivateGroup(groupId)
       router.push('/dashboard')
-    } catch (e: Error) {
-      console.error(e)
+    } catch (e: unknown) {
+      const errorMessage =
+      e instanceof Error ? e.message : "Group deletion failed";
+      console.error(errorMessage)
       setDeleting(false)
       setConfirmDelete(false)
     }
@@ -181,6 +184,10 @@ export default function GroupDetail() {
             <ExpenseCard key={exp.id.toString()} exp={exp} balance={balance} />
           ))}
         </section>
+        <section className="space-y-3">
+  <h2 className="text-sm font-semibold text-slate-100">Settlements</h2>
+  <SettlementHistory groupId={groupId} />
+</section>
       </main>
     </div>
   );
