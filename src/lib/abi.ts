@@ -118,5 +118,14 @@ export const FAIRSPLIT_ABI = [
       { "name": "to", "indexed": false, "type": "address" },
       { "name": "amount", "indexed": false, "type": "uint256" }
     ]
-  }
+  },
+{
+  name: 'deactivateGroup',
+  type: 'function',
+  stateMutability: 'nonpayable',
+  inputs: [
+    { name: 'groupId', internalType: 'uint256', type: 'uint256' }
+  ],
+  outputs: [],
+},
 ] as const
