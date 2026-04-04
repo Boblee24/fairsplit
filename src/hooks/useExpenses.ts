@@ -4,11 +4,17 @@ import type { Expense } from '@/types'
 
 export function useExpenses(groupId: bigint | undefined) {
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!groupId) return
+    if (!groupId) {
+      setExpenses([])
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
+    setExpenses([])
     getGroupExpenses(groupId)
       .then(data => {
         setExpenses(data as Expense[])
