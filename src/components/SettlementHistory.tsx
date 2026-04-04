@@ -78,7 +78,24 @@ useEffect(() => {
 }, [groupId])
 
   if (loading) {
-    return <p className="text-xs text-slate-400">Loading settlements...</p>
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <Card key={index} className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="h-4 w-40 animate-pulse rounded-full bg-slate-800/80" />
+                <div className="h-3 w-24 animate-pulse rounded-full bg-slate-800/60" />
+              </div>
+              <div className="space-y-2 text-right">
+                <div className="ml-auto h-4 w-16 animate-pulse rounded-full bg-slate-800/80" />
+                <div className="ml-auto h-3 w-20 animate-pulse rounded-full bg-slate-800/60" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    )
   }
 
   if (settlements.length === 0) {

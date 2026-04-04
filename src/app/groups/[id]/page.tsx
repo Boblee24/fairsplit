@@ -43,13 +43,47 @@ function ExpenseCard({ exp, balance }: { exp: any; balance: number }) {
   );
 }
 
+function ExpenseSkeleton() {
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2">
+          <div className="h-4 w-36 animate-pulse rounded-full bg-slate-800/80" />
+          <div className="h-3 w-24 animate-pulse rounded-full bg-slate-800/60" />
+        </div>
+        <div className="space-y-2 text-right">
+          <div className="ml-auto h-4 w-16 animate-pulse rounded-full bg-slate-800/80" />
+          <div className="ml-auto h-5 w-14 animate-pulse rounded-full bg-slate-800/60" />
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function SettlementSkeleton() {
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2">
+          <div className="h-4 w-40 animate-pulse rounded-full bg-slate-800/80" />
+          <div className="h-3 w-24 animate-pulse rounded-full bg-slate-800/60" />
+        </div>
+        <div className="space-y-2 text-right">
+          <div className="ml-auto h-4 w-16 animate-pulse rounded-full bg-slate-800/80" />
+          <div className="ml-auto h-3 w-20 animate-pulse rounded-full bg-slate-800/60" />
+        </div>
+      </div>
+    </Card>
+  )
+}
+
 export default function GroupDetail() {
   const { id } = useParams();
   const router = useRouter();
   const { address } = useAccount();
   const groupId = BigInt(id as string);
   const { expenses, loading } = useExpenses(groupId);
-  const { balance } = useBalance(groupId);
+  const { balance, loading: balanceLoading } = useBalance(groupId);
   const [groupName, setGroupName] = useState("");
   const [creator, setCreator] = useState("");
   const [deleting, setDeleting] = useState(false)
@@ -71,9 +105,10 @@ export default function GroupDetail() {
   }, [groupId]);
 
   const isCreator = address?.toLowerCase() === creator?.toLowerCase()
+  const isPageLoading = loading || balanceLoading
 
   async function handleDelete() {
-    if (!confirmDelete) return setConfirmDelete(true) // first click = ask confirm
+    if (!confirmDelete) return setConfirmDelete(true)
     setDeleting(true)
     try {
       await deactivateGroup(groupId)
@@ -94,14 +129,13 @@ export default function GroupDetail() {
       <header className="border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 text-sm">
           <Link href="/dashboard" className="text-slate-400 hover:text-slate-100">
-            ← Back
+            Back
           </Link>
           <span className="text-xs text-slate-600">/</span>
           <h1 className="text-sm font-medium text-slate-100 flex-1">
             {groupName || `Group #${id}`}
           </h1>
 
-          {/* Delete button — only visible to group creator */}
           {isCreator && (
             <Button
               onClick={handleDelete}
@@ -122,7 +156,7 @@ export default function GroupDetail() {
         <section className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]">
           <Card
             className={`relative overflow-hidden p-5 ${
-              balance >= 0
+              !balanceLoading && balance >= 0
                 ? "border-emerald-500/40 bg-linear-to-br from-emerald-500/10 via-slate-900/70 to-slate-900/80"
                 : "border-rose-500/40 bg-linear-to-br from-rose-500/10 via-slate-900/70 to-slate-900/80"
             }`}
@@ -131,15 +165,24 @@ export default function GroupDetail() {
             <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
               Your balance
             </div>
-            <div className={`mt-2 text-3xl font-semibold ${balance >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-              {balance >= 0 ? "+" : ""}{balance.toFixed(2)} USDC
-            </div>
-            <p className="mt-1 text-xs text-slate-400">
-              {balance >= 0
-                ? "You are owed this amount by the group."
-                : "You currently owe this amount to the group."}
-            </p>
-            {balance < 0 && (
+            {balanceLoading ? (
+              <div className="mt-3 space-y-3">
+                <div className="h-9 w-40 animate-pulse rounded-full bg-slate-800/80" />
+                <div className="h-3 w-52 animate-pulse rounded-full bg-slate-800/60" />
+              </div>
+            ) : (
+              <>
+                <div className={`mt-2 text-3xl font-semibold ${balance >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                  {balance >= 0 ? "+" : ""}{balance.toFixed(2)} USDC
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  {balance >= 0
+                    ? "You are owed this amount by the group."
+                    : "You currently owe this amount to the group."}
+                </p>
+              </>
+            )}
+            {!balanceLoading && balance < 0 && (
               <Link href={`/settle/${id}`}>
                 <Button className="mt-4 h-8 rounded-full bg-linear-to-r from-rose-500 to-amber-400 px-3 text-xs font-medium text-slate-950 hover:from-rose-400 hover:to-amber-300">
                   Settle now
@@ -152,11 +195,15 @@ export default function GroupDetail() {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-xs font-medium text-slate-400">Group activity</p>
-                <p className="mt-1 text-sm text-slate-100">
-                  {expenses.length === 0
-                    ? "No expenses yet"
-                    : `${expenses.length} expense${expenses.length === 1 ? "" : "s"} recorded`}
-                </p>
+                {loading ? (
+                  <div className="mt-2 h-4 w-32 animate-pulse rounded-full bg-slate-800/80" />
+                ) : (
+                  <p className="mt-1 text-sm text-slate-100">
+                    {expenses.length === 0
+                      ? "No expenses yet"
+                      : `${expenses.length} expense${expenses.length === 1 ? "" : "s"} recorded`}
+                  </p>
+                )}
               </div>
               <Link href={`/expenses/new?groupId=${id}`}>
                 <Button className="h-8 rounded-full bg-slate-100 px-3 text-xs font-medium text-slate-900 hover:bg-slate-200">
@@ -171,7 +218,11 @@ export default function GroupDetail() {
           <h2 className="text-sm font-semibold text-slate-100">Expenses</h2>
 
           {loading && (
-            <p className="text-xs text-slate-400">Loading expenses from the chain…</p>
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, index) => (
+                <ExpenseSkeleton key={index} />
+              ))}
+            </div>
           )}
 
           {!loading && expenses.length === 0 && (
@@ -180,14 +231,23 @@ export default function GroupDetail() {
             </Card>
           )}
 
-          {expenses.map((exp) => (
+          {!loading && expenses.map((exp) => (
             <ExpenseCard key={exp.id.toString()} exp={exp} balance={balance} />
           ))}
         </section>
+
         <section className="space-y-3">
-  <h2 className="text-sm font-semibold text-slate-100">Settlements</h2>
-  <SettlementHistory groupId={groupId} />
-</section>
+          <h2 className="text-sm font-semibold text-slate-100">Settlements</h2>
+          {isPageLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 2 }).map((_, index) => (
+                <SettlementSkeleton key={index} />
+              ))}
+            </div>
+          ) : (
+            <SettlementHistory groupId={groupId} />
+          )}
+        </section>
       </main>
     </div>
   );
