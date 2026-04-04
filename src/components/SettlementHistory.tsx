@@ -26,38 +26,56 @@ export function SettlementHistory({ groupId }: { groupId: bigint }) {
   const [settlements, setSettlements] = useState<Settlement[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchSettlements() {
-      try {
+useEffect(() => {
+  async function fetchSettlements() {
+    try {
+      const latestBlock = await client.getBlockNumber()
+      const CHUNK = 9000n
+      let allLogs: any[] = []
+
+      // Query in 9000-block chunks from latest backwards
+      let toBlock = latestBlock
+      let fromBlock = toBlock > CHUNK ? toBlock - CHUNK : 0n
+
+      // Go back up to 5 chunks (~45000 blocks ≈ last few days on Base Sepolia)
+      for (let i = 0; i < 5; i++) {
         const logs = await client.getLogs({
           address: CONTRACT_ADDRESS,
           event: parseAbiItem(
             'event Settled(uint256 indexed groupId, address indexed from, address indexed to, uint256 amount)'
           ),
           args: { groupId },
-          fromBlock: 0n,
-          toBlock: 'latest',
+          fromBlock,
+          toBlock,
         })
 
-        const parsed: Settlement[] = logs.map(log => ({
+        allLogs = [...allLogs, ...logs]
+
+        if (fromBlock === 0n) break
+        toBlock = fromBlock - 1n
+        fromBlock = toBlock > CHUNK ? toBlock - CHUNK : 0n
+      }
+
+      const parsed: Settlement[] = allLogs
+        .map(log => ({
           from: log.args.from as string,
           to: log.args.to as string,
           amount: log.args.amount as bigint,
           txHash: log.transactionHash ?? '',
           blockNumber: log.blockNumber ?? 0n,
         }))
+        .sort((a, b) => (a.blockNumber > b.blockNumber ? -1 : 1))
 
-        // Most recent first
-        setSettlements(parsed.reverse())
-      } catch (e) {
-        console.error('Failed to fetch settlements', e)
-      } finally {
-        setLoading(false)
-      }
+      setSettlements(parsed)
+    } catch (e) {
+      console.error('Failed to fetch settlements', e)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    fetchSettlements()
-  }, [groupId])
+  fetchSettlements()
+}, [groupId])
 
   if (loading) {
     return <p className="text-xs text-slate-400">Loading settlements...</p>
