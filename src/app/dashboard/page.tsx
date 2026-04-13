@@ -95,7 +95,7 @@ export default function Dashboard() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {groups.map((group) => (
               <Link key={group.id.toString()} href={`/groups/${group.id.toString()}`}>
-                <Card className="cursor-pointer p-4 transition-all hover:-translate-y-0.5 hover:border-sky-400/70 hover:shadow-[0_22px_60px_rgba(56,189,248,0.55)]">
+                <Card className="cursor-pointer p-4 transition-all hover:-translate-y-0.5 hover:border-sky-400/70 hover:shadow-[0_14px_32px_rgba(56,189,248,0.28)]">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="text-sm font-semibold">{group.name}</div>
