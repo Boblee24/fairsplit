@@ -83,6 +83,7 @@ async function handleSubmit() {
     })
     await createGroup(trimmedName, validMembers.map(m => m.address));
     router.push("/dashboard");
+    router.refresh();
   } catch (e: unknown) {
     const errorMessage =
       e instanceof Error ? e.message : "Group creation failed";

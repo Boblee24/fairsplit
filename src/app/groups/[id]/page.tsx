@@ -81,15 +81,17 @@ export default function GroupDetail() {
   const { id } = useParams();
   const router = useRouter();
   const { address } = useAccount();
-  const groupId = BigInt(id as string);
-  const { expenses, loading } = useExpenses(groupId);
-  const { balance, loading: balanceLoading } = useBalance(groupId);
+  const rawId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
+  const groupId = rawId ? BigInt(rawId) : null;
+  const { expenses, loading } = useExpenses(groupId ?? undefined);
+  const { balance, loading: balanceLoading } = useBalance(groupId ?? undefined);
   const [groupName, setGroupName] = useState("");
   const [creator, setCreator] = useState("");
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
+    if (groupId === null) return;
     let isMounted = true;
     getGroup(groupId)
       .then((g) => {
@@ -111,8 +113,10 @@ export default function GroupDetail() {
     if (!confirmDelete) return setConfirmDelete(true)
     setDeleting(true)
     try {
+      if (groupId === null) return
       await deactivateGroup(groupId)
       router.push('/dashboard')
+      router.refresh()
     } catch (e: unknown) {
       const errorMessage =
       e instanceof Error ? e.message : "Group deletion failed";
@@ -133,7 +137,7 @@ export default function GroupDetail() {
           </Link>
           <span className="text-xs text-slate-600">/</span>
           <h1 className="text-sm font-medium text-slate-100 flex-1">
-            {groupName || `Group #${id}`}
+            {groupName || `Group #${rawId}`}
           </h1>
 
           {isCreator && (
@@ -183,7 +187,7 @@ export default function GroupDetail() {
               </>
             )}
             {!balanceLoading && balance < 0 && (
-              <Link href={`/settle/${id}`}>
+              <Link href={`/settle/${rawId}`}>
                 <Button className="mt-4 h-8 rounded-full bg-linear-to-r from-rose-500 to-amber-400 px-3 text-xs font-medium text-slate-950 hover:from-rose-400 hover:to-amber-300">
                   Settle now
                 </Button>
@@ -205,7 +209,7 @@ export default function GroupDetail() {
                   </p>
                 )}
               </div>
-              <Link href={`/expenses/new?groupId=${id}`}>
+              <Link href={`/expenses/new?groupId=${rawId}`}>
                 <Button className="h-8 rounded-full bg-slate-100 px-3 text-xs font-medium text-slate-900 hover:bg-slate-200">
                   + Add expense
                 </Button>
@@ -245,7 +249,7 @@ export default function GroupDetail() {
               ))}
             </div>
           ) : (
-            <SettlementHistory groupId={groupId} />
+            groupId !== null ? <SettlementHistory groupId={groupId} /> : null
           )}
         </section>
       </main>

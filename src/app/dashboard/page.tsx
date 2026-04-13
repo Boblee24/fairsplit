@@ -4,19 +4,37 @@ import { useAccount } from 'wagmi'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useGroups } from '@/hooks/useGroups'
+import { useHydrated } from '@/hooks/useHydrated'
 import { WalletConnect } from '@/components/WalletConnect'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import Link from 'next/link'
 
+function GroupCardSkeleton() {
+  return (
+    <Card className="p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-2">
+          <div className="h-4 w-28 animate-pulse rounded-full bg-slate-800/80" />
+          <div className="h-3 w-20 animate-pulse rounded-full bg-slate-800/60" />
+        </div>
+        <div className="h-5 w-14 animate-pulse rounded-full bg-slate-800/70" />
+      </div>
+    </Card>
+  )
+}
+
 export default function Dashboard() {
-  const { address, isConnected } = useAccount()
+  const { isConnected } = useAccount()
   const router = useRouter()
   const { groups, loading } = useGroups()
+  const mounted = useHydrated()
 
   useEffect(() => {
-    if (!isConnected) router.push('/')
-  }, [isConnected, router])
+    if (mounted && !isConnected) router.push('/')
+  }, [isConnected, mounted, router])
+
+  const showDashboardSkeleton = !mounted || (isConnected && loading)
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50">
@@ -25,8 +43,7 @@ export default function Dashboard() {
       <header className="sticky top-0 z-20 border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-            <span className="text-lg">💸</span>
-            <span>FairSplit</span>
+            <span className="text-lg">FairSplit</span>
             <span className="rounded-full border border-slate-700/70 px-2 py-0.5 text-[10px] font-normal text-slate-400">
               Dashboard
             </span>
@@ -50,16 +67,16 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {loading && (
-          <div className="flex items-center gap-2 rounded-2xl border border-slate-800/80 bg-slate-900/60 px-4 py-3 text-sm text-slate-400">
-            <span className="size-2 animate-pulse rounded-full bg-sky-400" />
-            Syncing your groups onchain…
+        {showDashboardSkeleton && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <GroupCardSkeleton key={index} />
+            ))}
           </div>
         )}
 
-        {!loading && groups.length === 0 && (
+        {!showDashboardSkeleton && groups.length === 0 && (
           <Card className="items-center justify-center gap-4 py-10 text-center">
-            <div className="text-4xl">🏖️</div>
             <div>
               <p className="text-sm font-medium text-slate-100">No groups yet</p>
               <p className="mt-1 text-xs text-slate-400">
@@ -74,10 +91,10 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {groups.length > 0 && (
+        {!showDashboardSkeleton && groups.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {groups.map((group) => (
-              <Link key={group.id.toString()} href={`/groups/${group.id}`}>
+              <Link key={group.id.toString()} href={`/groups/${group.id.toString()}`}>
                 <Card className="cursor-pointer p-4 transition-all hover:-translate-y-0.5 hover:border-sky-400/70 hover:shadow-[0_22px_60px_rgba(56,189,248,0.55)]">
                   <div className="flex items-start justify-between gap-2">
                     <div>

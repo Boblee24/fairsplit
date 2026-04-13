@@ -6,15 +6,20 @@ import type { Group } from '@/types'
 export function useGroups() {
   const { address } = useAccount()
   const [groups, setGroups] = useState<Group[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!address) return
-    
+    if (!address) {
+      setGroups([])
+      setLoading(false)
+      return
+    }
+
     let isMounted = true
-    
+
     const fetchGroups = async () => {
       setLoading(true)
+      setGroups([])
       try {
         const ids = await getUserGroups(address)
         const groupData = await Promise.all(ids.map(async (id) => {
@@ -38,7 +43,7 @@ export function useGroups() {
     }
     
     fetchGroups()
-    
+
     return () => {
       isMounted = false
     }

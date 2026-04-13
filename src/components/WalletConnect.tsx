@@ -3,12 +3,20 @@
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
+import { useHydrated } from '@/hooks/useHydrated'
 
 export function WalletConnect() {
   const { address, isConnected } = useAccount()
   const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
   const [showOptions, setShowOptions] = useState(false)
+  const mounted = useHydrated()
+
+  if (!mounted) {
+    return (
+      <div className="h-10 w-40 animate-pulse rounded-full border border-slate-800/70 bg-slate-900/60" />
+    )
+  }
 
   if (isConnected && address) {
     return (
