@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createPublicClient, http, parseAbiItem } from 'viem'
+import { createPublicClient, http, parseAbiItem, Log, parseEventLogs } from 'viem'
 import { baseSepolia } from 'wagmi/chains'
 import { fromUSDC } from '@/lib/contract'
 import { resolveAddress } from '@/lib/nicknames'
@@ -31,7 +31,7 @@ useEffect(() => {
     try {
       const latestBlock = await client.getBlockNumber()
       const CHUNK = 9000n
-      let allLogs: any[] = []
+      let allLogs: Log[] = []
 
       // Query in 9000-block chunks from latest backwards
       let toBlock = latestBlock
@@ -56,7 +56,11 @@ useEffect(() => {
         fromBlock = toBlock > CHUNK ? toBlock - CHUNK : 0n
       }
 
-      const parsed: Settlement[] = allLogs
+      const parsed: Settlement[] = parseEventLogs({
+        logs: allLogs,
+        abi: [parseAbiItem('event Settled(uint256 indexed groupId, address indexed from, address indexed to, uint256 amount)')],
+        eventName: 'Settled',
+      })
         .map(log => ({
           from: log.args.from as string,
           to: log.args.to as string,
