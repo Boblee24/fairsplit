@@ -1,59 +1,44 @@
-﻿"use client";
+﻿// WalletConnect.tsx
+'use client'
 
-import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { useState } from "react";
-import { useHydrated } from "@/hooks/useHydrated";
-import { WalletConnectModal } from "./WalletConnectModal";
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 
 export function WalletConnect() {
-  const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
-  const { disconnect } = useDisconnect();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const mounted = useHydrated();
-
-  if (!mounted) {
-    return (
-      <div className="h-11 w-40 animate-pulse rounded-full border border-slate-800/70 bg-slate-900/60" />
-    );
-  }
-
-  if (isConnected && address) {
-    return (
-      <div className="flex items-center gap-3 rounded-full border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs shadow-[0_0_20px_rgba(56,189,248,0.15)]">
-        <span className="inline-flex size-2 rounded-full bg-emerald-400" />
-        <span className="font-mono text-[11px] text-slate-200">
-          {address.slice(0, 6)}...{address.slice(-4)}
-        </span>
-        <button
-          onClick={() => disconnect()}
-          className="ml-1 rounded-full bg-slate-800 px-3 py-1 text-[10px] font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition"
-        >
-          Disconnect
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <>
-      <button
-        onClick={() => setIsModalOpen(true)}
-        className="h-11 px-8 rounded-full min-w-40 text-sm font-bold text-slate-950 bg-gradient-to-r from-sky-400 via-emerald-400 to-indigo-500 hover:opacity-90 transition"
-      >
-        Connect Wallet
-      </button>
+    <ConnectButton.Custom>
+      {({
+        account,
+        chain,
+        openAccountModal,
+        openConnectModal,
+        mounted,
+      }) => {
+        const ready = mounted
+        const connected = ready && account && chain
 
-      <WalletConnectModal
-        open={isModalOpen}
-        connectors={connectors}
-        isPending={isPending}
-        onClose={() => setIsModalOpen(false)}
-        onConnect={(connector) => {
-          connect({ connector });
-          setIsModalOpen(false);
-        }}
-      />
-    </>
-  );
+        return (
+          <div {...(!ready && { 'aria-hidden': true, style: { opacity: 0, pointerEvents: 'none' } })}>
+            {!connected ? (
+              <button
+                onClick={openConnectModal}
+                className="h-11 px-8 rounded-full min-w-40 text-sm font-bold text-slate-950 bg-linear-to-r from-sky-400 via-emerald-400 to-indigo-500 shadow-[0_15px_45px_-10px_rgba(56,189,248,0.6)] transition-all duration-300 ease-out hover:from-sky-300 hover:via-emerald-300 hover:to-indigo-400 hover:shadow-[0_10px_25px_-8px_rgba(56,189,248,0.8)] hover:-translate-y-0.5 active:scale-95"
+              >
+                Connect Wallet
+              </button>
+            ) : (
+              <button
+                onClick={openAccountModal}
+                className="flex items-center gap-3 rounded-full border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs shadow-[0_0_30px_rgba(56,189,248,0.2)]"
+              >
+                <span className="inline-flex size-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
+                <span className="font-mono text-[11px] text-slate-200">
+                  {account.displayName}
+                </span>
+              </button>
+            )}
+          </div>
+        )
+      }}
+    </ConnectButton.Custom>
+  )
 }
