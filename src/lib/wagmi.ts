@@ -1,20 +1,20 @@
-import { createConfig, http } from 'wagmi'
-import { baseSepolia } from 'wagmi/chains'
-import { metaMask, injected } from 'wagmi/connectors'
+// lib/wagmi.ts
+import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { baseSepolia } from "wagmi/chains";
+import { http } from "wagmi";
 
-export const config = createConfig({
+export const config = getDefaultConfig({
+  appName: "FairSplit",
+  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID!,
   chains: [baseSepolia],
-  connectors: [
-    metaMask(),
-    injected(),
-  ],
   transports: {
-    [baseSepolia.id]: http('https://sepolia.base.org'),
+    [baseSepolia.id]: http("https://sepolia.base.org"), // your custom RPC kept
   },
-})
+  ssr: true,
+});
 
-declare module 'wagmi' {
+declare module "wagmi" {
   interface Register {
-    config: typeof config
+    config: typeof config;
   }
 }

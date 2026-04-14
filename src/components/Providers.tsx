@@ -1,25 +1,30 @@
+// providers.tsx
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { config } from "@/lib/wagmi";
+import "@rainbow-me/rainbowkit/styles.css";
 import { useState } from "react";
-// import { OnchainKitProvider } from "@coinbase/onchainkit";
-// import { baseSepolia } from "wagmi/chains";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    // <OnchainKitProvider
-    //   apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
-    //   chain={baseSepolia}
-    // >
-      <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider
+          theme={darkTheme({
+            accentColor: "#38bdf8",
+            accentColorForeground: "#0f172a",
+            borderRadius: "large",
+            fontStack: "system",
+          })}
+        >
           {children}
-        </QueryClientProvider>
-      </WagmiProvider>
-    // </OnchainKitProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
