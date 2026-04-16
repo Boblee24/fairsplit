@@ -9,6 +9,11 @@ export const metadata: Metadata = {
   title: 'FairSplit — Split expenses globally',
   description: 'Split expenses with anyone, anywhere. Settle instantly in USDC on Base.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,4 +27,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
-//been a while since i pushed something

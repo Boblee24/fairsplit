@@ -13,7 +13,14 @@ import { Badge } from "@/components/ui/badge";
 import { SettlementHistory } from '@/components/SettlementHistory'
 import Link from "next/link";
 
-function ExpenseCard({ exp, balance }: { exp: any; balance: number }) {
+interface Expense {
+  id: bigint;
+  description: string;
+  payer: string;
+  amount: bigint;
+}
+
+function ExpenseCard({ exp, balance }: { exp: Expense; balance: number }) {
   return (
     <Card key={exp.id.toString()} className="p-4">
       <div className="flex items-center justify-between gap-4">
