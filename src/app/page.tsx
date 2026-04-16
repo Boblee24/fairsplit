@@ -197,6 +197,7 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           gap: 12px;
+          min-width: 0;
         }
 
         .fs-receipt {
@@ -276,6 +277,8 @@ export default function Home() {
           display: flex;
           align-items: center;
           gap: 12px;
+          width: 100%;
+          min-width: 0;
         }
         .fs-ticker-dot {
           width: 7px; height: 7px;
@@ -293,6 +296,7 @@ export default function Home() {
           color: #8892a4;
           transition: opacity 0.3s ease;
           flex: 1;
+          min-width: 0;
           overflow: hidden;
           white-space: nowrap;
           text-overflow: ellipsis;
