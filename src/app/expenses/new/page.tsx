@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
+import AIExpenseParser, { ParsedExpense } from "@/components/AIExpenseParser"
 
 function AddExpenseForm() {
   const router = useRouter()
@@ -23,17 +24,17 @@ function AddExpenseForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // NEW — group members from contract + nicknames
   const [groupMembers, setGroupMembers] = useState<{ address: string; label: string }[]>([])
   const [selectedDebtors, setSelectedDebtors] = useState<string[]>([])
 
-  // Fetch group members on mount
+  // Track whether AI just pre-filled the form so we can show a subtle indicator
+  const [aiPrefilled, setAiPrefilled] = useState(false)
+
   useEffect(() => {
     async function fetchMembers() {
       try {
         const result = await getGroup(BigInt(groupId)) as any
         const members: string[] = Array.isArray(result) ? result[2] : result.members
-        // Exclude current user — they are the payer
         const others = members.filter(m => m.toLowerCase() !== address?.toLowerCase())
         setGroupMembers(getGroupMembers(others))
       } catch (e) {
@@ -43,10 +44,43 @@ function AddExpenseForm() {
     if (address) fetchMembers()
   }, [groupId, address])
 
+  // ── AI Parser handler ─────────────────────────────────────────────────────
+  function handleParsedExpense(parsed: ParsedExpense) {
+    // Pre-fill description and amount
+    setDescription(parsed.description)
+    setAmount(parsed.amount.toString())
+
+    // Try to auto-select debtors if the AI detected a member count.
+    // e.g. "split 4 ways" with 3 other members → select all 3.
+    // We can't know *which* specific people, so select all if count matches,
+    // otherwise leave selection to the user.
+    if (parsed.memberCount !== null) {
+      const expectedDebtors = parsed.memberCount - 1 // subtract the payer
+      if (expectedDebtors === groupMembers.length) {
+        // Perfectly matches — select everyone
+        setSelectedDebtors(groupMembers.map(m => m.address))
+      } else if (expectedDebtors > 0 && expectedDebtors < groupMembers.length) {
+        // Partial match — don't guess, let user pick
+        // But clear any stale selection so they start fresh
+        setSelectedDebtors([])
+      }
+    }
+
+    setAiPrefilled(true)
+
+    // Scroll to the form so the user sees the pre-filled fields
+    setTimeout(() => {
+      document.getElementById('expense-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   function toggleDebtor(addr: string) {
     setSelectedDebtors(prev =>
       prev.includes(addr) ? prev.filter(a => a !== addr) : [...prev, addr]
     )
+    // Clear the AI badge once the user starts manually adjusting
+    setAiPrefilled(false)
   }
 
   const sharePerPerson = amount && selectedDebtors.length > 0
@@ -101,7 +135,32 @@ function AddExpenseForm() {
       </header>
 
       <main className="mx-auto flex max-w-xl flex-col gap-6 px-4 pb-10 pt-6">
-        <section className="space-y-5 rounded-3xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.9)] backdrop-blur-xl">
+
+        {/* ── AI Parser — lives above the form card ── */}
+        <AIExpenseParser
+          onParsed={handleParsedExpense}
+          groupMembers={groupMembers.map(m => m.label)}
+        />
+
+        <section
+          id="expense-form"
+          className="space-y-5 rounded-3xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.9)] backdrop-blur-xl"
+        >
+          {/* AI pre-fill badge */}
+          {aiPrefilled && (
+            <div className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-purple-950/30 px-3 py-2">
+              <span className="text-sm">✨</span>
+              <p className="text-xs text-purple-300">
+                Pre-filled by AI — review the details below and confirm who to split with.
+              </p>
+              <button
+                onClick={() => setAiPrefilled(false)}
+                className="ml-auto text-purple-500 hover:text-purple-300 text-xs"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* Description */}
           <div className="space-y-2">
@@ -109,7 +168,10 @@ function AddExpenseForm() {
             <Input
               placeholder="Dinner at Nobu, Airbnb, taxi..."
               value={description}
-              onChange={e => setDescription(e.target.value)}
+              onChange={e => {
+                setDescription(e.target.value)
+                setAiPrefilled(false)
+              }}
             />
           </div>
 
@@ -122,13 +184,16 @@ function AddExpenseForm() {
                 type="number"
                 placeholder="0.00"
                 value={amount}
-                onChange={e => setAmount(e.target.value)}
+                onChange={e => {
+                  setAmount(e.target.value)
+                  setAiPrefilled(false)
+                }}
                 className="pl-7"
               />
             </div>
           </div>
 
-          {/* Debtors — now a checklist instead of address inputs */}
+          {/* Debtors checklist */}
           <div className="space-y-2">
             <Label>Split with</Label>
             <p className="text-xs text-slate-400">You paid. Select who owes you.</p>

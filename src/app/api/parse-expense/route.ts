@@ -1,9 +1,6 @@
 // app/api/parse-expense/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-
 const SYSTEM_PROMPT = `You are an expense parser for FairSplit, a group expense splitting app.
 Extract expense details from natural language input and return ONLY a valid JSON object.
 
@@ -47,7 +44,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         { error: "AI parser is not configured." },
@@ -55,29 +52,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: `${SYSTEM_PROMPT}\n\nInput: "${text.trim()}"`,
-              },
-            ],
-          },
+        model: "llama-3.1-8b-instant",
+        temperature: 0.1,
+        max_tokens: 256,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: `Input: "${text.trim()}"` },
         ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 256,
-        },
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      console.error("Gemini API error:", err);
+      console.error("Groq API error:", err);
       return NextResponse.json(
         { error: "AI parser request failed. Try again." },
         { status: 502 }
@@ -85,10 +79,8 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
-    const rawText =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
+    const rawText = data?.choices?.[0]?.message?.content?.trim() ?? "";
 
-    // Strip any accidental markdown fences
     const cleaned = rawText.replace(/```json|```/g, "").trim();
 
     let parsed;
@@ -101,7 +93,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Basic validation
     if (!parsed.amount || isNaN(Number(parsed.amount)) || parsed.amount <= 0) {
       return NextResponse.json(
         { error: "Couldn't find a valid amount. Please include the cost." },

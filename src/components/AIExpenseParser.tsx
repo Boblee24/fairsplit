@@ -1,16 +1,13 @@
 "use client";
 
 // components/AIExpenseParser.tsx
-// Drop this above your existing add-expense form.
-// It calls /api/parse-expense and fires onParsed() with structured data
-// so you can pre-fill your form fields.
 
 import { useState } from "react";
 
 export interface ParsedExpense {
   description: string;
   amount: number;
-  payerHint: string | null; // name/nickname — match against your group members
+  payerHint: string | null;
   splitType: "equal" | "custom";
   memberCount: number | null;
   notes: string | null;
@@ -18,11 +15,34 @@ export interface ParsedExpense {
 }
 
 interface AIExpenseParserProps {
-  /** Called when the user accepts the parsed result */
   onParsed: (expense: ParsedExpense) => void;
-  /** Optional: so the component can show "Did you mean [member]?" hints */
-  groupMembers?: string[]; // array of nicknames / short addresses
+  groupMembers?: string[];
 }
+
+const SYSTEM_PROMPT = `You are an expense parser for FairSplit, a group expense splitting app.
+Extract expense details from natural language input and return ONLY a valid JSON object.
+
+Rules:
+- "amount" must be a positive number (no currency symbols)
+- "payerHint" is the name or nickname of whoever paid (could be "me", "I", a name, etc.)
+- "splitType" is "equal" if split evenly, "custom" if specific amounts are mentioned
+- "description" is a short label for the expense (e.g. "Dinner", "Uber ride", "Groceries")
+- "memberCount" is how many people are splitting (if mentioned), otherwise null
+- "notes" captures any extra context
+- "confidence" is "high" if all fields are clear, "medium" if some are inferred, "low" if guessing
+
+Return ONLY this JSON object, no markdown fences, no explanation, no extra text:
+{"description":"string","amount":0,"payerHint":"string or null","splitType":"equal or custom","memberCount":0,"notes":"string or null","confidence":"high or medium or low"}
+
+Examples:
+Input: "Sarah paid $120 for dinner, split between 4 of us"
+{"description":"Dinner","amount":120,"payerHint":"Sarah","splitType":"equal","memberCount":4,"notes":null,"confidence":"high"}
+
+Input: "I covered the Uber, was $35 total"
+{"description":"Uber","amount":35,"payerHint":"me","splitType":"equal","memberCount":null,"notes":null,"confidence":"medium"}
+
+Input: "I paid $4 for pizza, split 3 ways"
+{"description":"Pizza","amount":4,"payerHint":"me","splitType":"equal","memberCount":3,"notes":null,"confidence":"high"}`;
 
 const EXAMPLES = [
   "Sarah paid $45 for pizza, split 3 ways",
@@ -52,7 +72,6 @@ export default function AIExpenseParser({
     low: "Low confidence — please review carefully",
   };
 
-  // Try to match payerHint against known group members
   const matchedPayer =
     result?.payerHint && groupMembers.length > 0
       ? groupMembers.find((m) =>
@@ -67,20 +86,47 @@ export default function AIExpenseParser({
     setResult(null);
 
     try {
-      const res = await fetch("/api/parse-expense", {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: input }),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          temperature: 0.1,
+          max_tokens: 256,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: `Input: "${input.trim()}"` },
+          ],
+        }),
       });
 
       const data = await res.json();
 
-      if (!res.ok || data.error) {
-        setError(data.error ?? "Something went wrong.");
+      if (!res.ok) {
+        setError("AI request failed. Check your API key.");
         return;
       }
 
-      setResult(data.result);
+      const rawText = data?.choices?.[0]?.message?.content?.trim() ?? "";
+      const cleaned = rawText.replace(/```json|```/g, "").trim();
+
+      let parsed: ParsedExpense;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        setError("Couldn't parse the response. Try rephrasing.");
+        return;
+      }
+
+      if (!parsed.amount || isNaN(Number(parsed.amount)) || parsed.amount <= 0) {
+        setError("Couldn't find a valid amount. Please include the cost.");
+        return;
+      }
+
+      setResult(parsed);
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -91,7 +137,6 @@ export default function AIExpenseParser({
   function handleAccept() {
     if (!result) return;
     onParsed(result);
-    // Reset state after accepting
     setResult(null);
     setInput("");
     setOpen(false);
@@ -106,7 +151,6 @@ export default function AIExpenseParser({
 
   return (
     <div className="mb-6">
-      {/* Toggle button */}
       <button
         type="button"
         onClick={() => {
@@ -123,7 +167,6 @@ export default function AIExpenseParser({
 
       {open && (
         <div className="mt-2 rounded-xl border border-purple-500/30 bg-gray-900/80 p-4 space-y-4">
-          {/* Input area */}
           <div>
             <textarea
               value={input}
@@ -133,7 +176,6 @@ export default function AIExpenseParser({
               rows={2}
               className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
             />
-            {/* Example chips */}
             <div className="mt-2 flex flex-wrap gap-2">
               {EXAMPLES.map((ex) => (
                 <button
@@ -148,7 +190,6 @@ export default function AIExpenseParser({
             </div>
           </div>
 
-          {/* Parse button */}
           <button
             type="button"
             onClick={handleParse}
@@ -156,71 +197,48 @@ export default function AIExpenseParser({
             className="w-full py-2 rounded-lg bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
           >
             {loading ? (
-              <>
-                <span className="animate-spin">⟳</span> Parsing...
-              </>
+              <><span className="animate-spin">⟳</span> Parsing...</>
             ) : (
               <>✨ Parse with AI</>
             )}
           </button>
 
-          {/* Error */}
           {error && (
             <p className="text-sm text-red-400 bg-red-900/20 border border-red-500/30 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
 
-          {/* Result preview card */}
           {result && (
             <div className="rounded-lg border border-purple-500/40 bg-purple-950/30 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-purple-300">
-                  Parsed Result
-                </span>
-                <span
-                  className={`text-xs ${confidenceColor[result.confidence]}`}
-                >
+                <span className="text-sm font-semibold text-purple-300">Parsed Result</span>
+                <span className={`text-xs ${confidenceColor[result.confidence]}`}>
                   {confidenceLabel[result.confidence]}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
-                    Description
-                  </p>
+                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Description</p>
                   <p className="text-white font-medium">{result.description}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
-                    Amount
-                  </p>
-                  <p className="text-white font-medium">
-                    ${result.amount.toFixed(2)}
-                  </p>
+                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
+                  <p className="text-white font-medium">${result.amount.toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
-                    Paid by
-                  </p>
+                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Paid by</p>
                   <p className="text-white font-medium">
                     {matchedPayer ?? result.payerHint ?? (
-                      <span className="text-yellow-400">
-                        Unknown — select manually
-                      </span>
+                      <span className="text-yellow-400">Unknown — select manually</span>
                     )}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
-                    Split
-                  </p>
+                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Split</p>
                   <p className="text-white font-medium capitalize">
-                    {result.splitType}
-                    {result.memberCount
-                      ? ` · ${result.memberCount} people`
-                      : ""}
+                    {result.splitType}{result.memberCount ? ` · ${result.memberCount} people` : ""}
                   </p>
                 </div>
               </div>
@@ -241,10 +259,7 @@ export default function AIExpenseParser({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setResult(null);
-                    setError(null);
-                  }}
+                  onClick={() => { setResult(null); setError(null); }}
                   className="px-4 py-2 rounded-lg border border-gray-600 hover:border-gray-400 text-gray-400 text-sm transition-colors"
                 >
                   Retry
