@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createPublicClient, http, parseAbiItem, Log, parseEventLogs } from 'viem'
 import { baseSepolia } from 'wagmi/chains'
 import { fromUSDC } from '@/lib/contract'
-import { resolveAddress } from '@/lib/nicknames'
+import { fetchUsername, formatWithName } from '@/lib/nicknames'
 import { Card } from '@/components/ui/card'
 
 const client = createPublicClient({
@@ -25,6 +25,22 @@ interface Settlement {
 export function SettlementHistory({ groupId }: { groupId: bigint }) {
   const [settlements, setSettlements] = useState<Settlement[]>([])
   const [loading, setLoading] = useState(true)
+  const [names, setNames] = useState<Record<string, string>>({})
+
+// Add this effect after the settlements fetch effect:
+useEffect(() => {
+  if (!settlements.length) return
+  const uniqueAddresses = [...new Set(settlements.flatMap(s => [s.from, s.to]))]
+  Promise.all(
+    uniqueAddresses.map(async (addr) => {
+      const name = await fetchUsername(addr)
+      return [addr.toLowerCase(), formatWithName(addr, name)] as const
+    })
+  ).then(entries => setNames(Object.fromEntries(entries)))
+}, [settlements])
+
+const resolve = (addr: string) => 
+  names[addr.toLowerCase()] ?? `${addr.slice(0, 6)}...${addr.slice(-4)}`
 
 useEffect(() => {
   async function fetchSettlements() {
@@ -117,9 +133,9 @@ useEffect(() => {
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="text-sm font-medium text-slate-50">
-                {resolveAddress(s.from)}{' '}
+                {resolve(s.from)}{''}
                 <span className="text-slate-500">→</span>{' '}
-                {resolveAddress(s.to)}
+                {resolve(s.to)}
               </div>
               <a
                 href={`https://sepolia.basescan.org/tx/${s.txHash}`}
