@@ -6,6 +6,7 @@ import { useAccount } from "wagmi";
 import { addExpense, getGroup, switchToBaseSepolia } from "@/lib/contract";
 import { uploadReceipt } from "@/lib/pinata";
 // import { getGroupMembers } from '@/lib/nicknames'
+import { fetchUsername, formatWithName } from '@/lib/nicknames'
 import CategoryPicker from "@/components/CategoryPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,31 +26,30 @@ function AddExpenseForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // NEW — group members from contract + nicknames
-  const [groupMembers, setGroupMembers] = useState<
-    { address: string; label: string }[]
-  >([]);
   const [selectedDebtors, setSelectedDebtors] = useState<string[]>([]);
+  // NEW — group members from contract + nicknames
+const [groupMembers, setGroupMembers] = useState<{ address: string; label: string }[]>([])
 
-  // Fetch group members on mount
-  useEffect(() => {
-    async function fetchMembers() {
-      try {
-        const result = (await getGroup(BigInt(groupId))) as any;
-        const members: string[] = Array.isArray(result)
-          ? result[2]
-          : result.members;
-        // Exclude current user — they are the payer
-        const others = members.filter(
-          (m) => m.toLowerCase() !== address?.toLowerCase(),
-        );
-        setGroupMembers(getGroupMembers(others));
-      } catch (e) {
-        console.error("Failed to fetch group members", e);
-      }
+useEffect(() => {
+  async function fetchMembers() {
+    try {
+      const result = (await getGroup(BigInt(groupId))) as any
+      const members: string[] = Array.isArray(result) ? result[2] : result.members
+      const others = members.filter(m => m.toLowerCase() !== address?.toLowerCase())
+      
+      const withNames = await Promise.all(
+        others.map(async (addr) => {
+          const name = await fetchUsername(addr)
+          return { address: addr, label: formatWithName(addr, name) }
+        })
+      )
+      setGroupMembers(withNames)
+    } catch (e) {
+      console.error('Failed to fetch group members', e)
     }
-    if (address) fetchMembers();
-  }, [groupId, address]);
+  }
+  if (address) fetchMembers()
+}, [groupId, address])
 
   function toggleDebtor(addr: string) {
     setSelectedDebtors((prev) =>
