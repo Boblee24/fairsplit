@@ -98,6 +98,7 @@ export async function addExpense(
   amount: number,
   description: string,
   receiptHash: string,
+  category: string,
   debtors: string[],
   shares: number[]
 ) {
@@ -110,6 +111,7 @@ export async function addExpense(
       toUSDC(amount),
       description,
       receiptHash,
+      category,
       debtors as `0x${string}`[],
       shares.map(s => toUSDC(s))
     ],

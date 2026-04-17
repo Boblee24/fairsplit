@@ -23,9 +23,9 @@ export const FAIRSPLIT_ABI = [
       { "name": "amount", "type": "uint256" },
       { "name": "description", "type": "string" },
       { "name": "receiptHash", "type": "string" },
+      { "name": "category", "type": "string" },
       { "name": "debtors", "type": "address[]" },
       { "name": "shares", "type": "uint256[]" },
-      { "name": "category", "type": "string" }
     ],
     "outputs": []
   },
@@ -69,7 +69,7 @@ export const FAIRSPLIT_ABI = [
         { "name": "debtors", "type": "address[]" },
         { "name": "shares", "type": "uint256[]" },
         { "name": "settled", "type": "bool" },
-        { "name": "category", "type": "string" },
+        { name: "category",    type: "string" },
         { "name": "timestamp", "type": "uint256" }
       ],
       "type": "tuple[]"
