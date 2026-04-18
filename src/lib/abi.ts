@@ -23,8 +23,9 @@ export const FAIRSPLIT_ABI = [
       { "name": "amount", "type": "uint256" },
       { "name": "description", "type": "string" },
       { "name": "receiptHash", "type": "string" },
+      { "name": "category", "type": "string" },
       { "name": "debtors", "type": "address[]" },
-      { "name": "shares", "type": "uint256[]" }
+      { "name": "shares", "type": "uint256[]" },
     ],
     "outputs": []
   },
@@ -64,6 +65,7 @@ export const FAIRSPLIT_ABI = [
         { "name": "payer", "type": "address" },
         { "name": "amount", "type": "uint256" },
         { "name": "description", "type": "string" },
+        { "name": "category",    "type": "string" },
         { "name": "receiptHash", "type": "string" },
         { "name": "debtors", "type": "address[]" },
         { "name": "shares", "type": "uint256[]" },
@@ -127,5 +129,19 @@ export const FAIRSPLIT_ABI = [
     { name: 'groupId', internalType: 'uint256', type: 'uint256' }
   ],
   outputs: [],
+},
+{
+  name: 'setUsername',
+  type: 'function',
+  stateMutability: 'nonpayable',
+  inputs: [{ name: 'name', type: 'string' }],
+  outputs: [],
+},
+{
+  name: 'getUsername',
+  type: 'function',
+  stateMutability: 'view',
+  inputs: [{ name: 'user', type: 'address' }],
+  outputs: [{ type: 'string' }],
 },
 ] as const

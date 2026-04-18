@@ -14,27 +14,37 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { resolveAddress } from "@/lib/nicknames";
+import { useUsernames } from "@/hooks/useUsernames";
 import Link from "next/link";
 
 export default function SettlePage() {
   const { groupId } = useParams();
   const router = useRouter();
   const { address } = useAccount();
-  const parsedGroupId = BigInt(groupId as string);
+   const parsedGroupId = BigInt(groupId as string);
   const { balance } = useBalance(parsedGroupId);
   const [creditor, setCreditor] = useState("");
-  const [creditors, setCreditors] = useState<{ address: string; balance: number }[]>([]);
+  const [creditors, setCreditors] = useState<
+    { address: string; balance: number }[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+   const creditorAddresses = creditors.map((c) => c.address);
+  const { resolve } = useUsernames(creditorAddresses);
 
   useEffect(() => {
     if (!address) return;
 
     async function resolveCreditors() {
       try {
-        const result = (await getGroup(parsedGroupId)) as [bigint, string, string[], string, boolean];
+        const result = (await getGroup(parsedGroupId)) as [
+          bigint,
+          string,
+          string[],
+          string,
+          boolean,
+        ];
         const members: string[] = Array.isArray(result) ? result[2] : [];
 
         if (!members.length) return;
@@ -47,7 +57,10 @@ export default function SettlePage() {
         );
 
         const positiveMembers = balances.filter(
-          (member) => member.balance > 0 && address && member.address.toLowerCase() !== address.toLowerCase(),
+          (member) =>
+            member.balance > 0 &&
+            address &&
+            member.address.toLowerCase() !== address.toLowerCase(),
         );
 
         setCreditors(positiveMembers);
@@ -76,7 +89,8 @@ export default function SettlePage() {
       setSuccess(true);
       setTimeout(() => router.push(`/groups/${groupId}`), 2000);
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : "Transaction failed";
+      const errorMessage =
+        e instanceof Error ? e.message : "Transaction failed";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -89,7 +103,10 @@ export default function SettlePage() {
 
       <header className="border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-xl items-center gap-3 px-4 py-3 text-sm">
-          <Link href={`/groups/${groupId}`} className="text-slate-400 hover:text-slate-100">
+          <Link
+            href={`/groups/${groupId}`}
+            className="text-slate-400 hover:text-slate-100"
+          >
             Back
           </Link>
           <span className="text-xs text-slate-600">/</span>
@@ -113,7 +130,8 @@ export default function SettlePage() {
                   Payment confirmed onchain
                 </CardTitle>
                 <CardDescription className="max-w-md text-sm leading-6 text-slate-300">
-                  Your balance for this group has been cleared successfully. We&apos;re taking you back to the group details now.
+                  Your balance for this group has been cleared successfully.
+                  We&apos;re taking you back to the group details now.
                 </CardDescription>
               </div>
             </CardHeader>
@@ -152,7 +170,8 @@ export default function SettlePage() {
                 ${Math.abs(balance).toFixed(2)} USDC
               </div>
               <p className="mt-1 text-xs text-slate-300">
-                This is your current net position in this group. You&apos;ll pay this amount in a single onchain transaction.
+                This is your current net position in this group. You&apos;ll pay
+                this amount in a single onchain transaction.
               </p>
             </section>
 
@@ -169,13 +188,13 @@ export default function SettlePage() {
                     <option value="">Select who to pay</option>
                     {creditors.map((c) => (
                       <option key={c.address} value={c.address}>
-                        {resolveAddress(c.address)} - owed ${c.balance.toFixed(2)}
+                        {resolve(c.address)} - owed ${c.balance.toFixed(2)}
                       </option>
                     ))}
                   </select>
                 ) : (
                   <div className="rounded-md border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-slate-300 break-all">
-                    {creditor ? resolveAddress(creditor) : "Resolving creditor..."}
+                    {creditor ? resolve(creditor) : "Resolving creditor..."}
                   </div>
                 )}
               </div>
@@ -187,7 +206,9 @@ export default function SettlePage() {
                 disabled={loading || !creditor}
                 className="mt-1 h-11 w-full rounded-full bg-linear-to-r from-emerald-500 to-sky-400 text-sm font-medium text-slate-950 shadow-[0_24px_70px_rgba(52,211,153,0.7)] hover:from-emerald-400 hover:to-sky-300"
               >
-                {loading ? "Sending USDC..." : `Pay $${Math.abs(balance).toFixed(2)} USDC`}
+                {loading
+                  ? "Sending USDC..."
+                  : `Pay $${Math.abs(balance).toFixed(2)} USDC`}
               </Button>
 
               <p className="pt-1 text-center text-[11px] text-slate-400">

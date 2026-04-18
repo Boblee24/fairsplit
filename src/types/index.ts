@@ -17,6 +17,7 @@ export interface Expense {
   shares: bigint[]
   settled: boolean
   timestamp: bigint
+  category: string
 }
 
 export interface Balance {

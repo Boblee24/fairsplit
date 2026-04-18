@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createGroup } from "@/lib/contract";
-import { switchToBaseSepolia } from "@/lib/contract";
-import { setNickname } from "@/lib/nicknames";
+import { createGroup, switchToBaseSepolia } from "@/lib/contract";
+import { setUsername } from "@/lib/nicknames";
 import { getAccount } from "@wagmi/core";
 import { config } from "@/lib/wagmi";
 import { getAddress, isAddress } from "viem";
@@ -17,81 +16,64 @@ export default function NewGroup() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [creatorName, setCreatorName] = useState("");
-  const [members, setMembers] = useState([{ address: "", name: "" }]);
+  const [members, setMembers] = useState([{ address: "" }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const addMember = () => setMembers([...members, { address: "", name: "" }]);
-  const updateMember = (i: number, field: "address" | "name", val: string) => {
+  const addMember = () => setMembers([...members, { address: "" }]);
+  const updateMember = (i: number, val: string) => {
     const updated = [...members];
-    updated[i] = { ...updated[i], [field]: val };
+    updated[i] = { address: val };
     setMembers(updated);
   };
   const removeMember = (i: number) =>
     setMembers(members.filter((_, idx) => idx !== i));
 
-  // Valid members filter
+  async function handleSubmit() {
+    const trimmedName = name.trim();
+    if (!trimmedName) return setError("Group name is required");
 
-async function handleSubmit() {
-  const trimmedName = name.trim();
-  if (!trimmedName) return setError("Group name is required");
+    const accountAddress = getAccount(config).address;
+    const connectedAddress = accountAddress ? getAddress(accountAddress) : null;
 
-  const accountAddress = getAccount(config).address;
-  const connectedAddress = accountAddress ? getAddress(accountAddress) : null;
+    const uniqueMembers = new Map<string, `0x${string}`>();
+    members.forEach((member) => {
+      const rawAddress = member.address.trim();
+      if (!isAddress(rawAddress)) return;
+      const normalized = getAddress(rawAddress);
+      if (
+        connectedAddress &&
+        normalized.toLowerCase() === connectedAddress.toLowerCase()
+      ) return;
+      uniqueMembers.set(normalized.toLowerCase(), normalized);
+    });
 
-  const uniqueMembers = new Map<string, { address: `0x${string}`; name: string }>();
-  members.forEach((member) => {
-    const rawAddress = member.address.trim();
-    if (!isAddress(rawAddress)) return;
-
-    const normalized = getAddress(rawAddress);
-    if (
-      connectedAddress &&
-      normalized.toLowerCase() === connectedAddress.toLowerCase()
-    ) {
-      return;
+    const validAddresses = Array.from(uniqueMembers.values());
+    if (validAddresses.length === 0) {
+      return setError("Add at least one valid wallet address different from your own");
     }
 
-    const key = normalized.toLowerCase();
-    const existing = uniqueMembers.get(key);
-    const trimmedNickname = member.name.trim();
-    if (!existing) {
-      uniqueMembers.set(key, { address: normalized, name: trimmedNickname });
-      return;
-    }
-    if (!existing.name && trimmedNickname) {
-      uniqueMembers.set(key, { ...existing, name: trimmedNickname });
-    }
-  });
+    setLoading(true);
+    setError("");
+    try {
+      await switchToBaseSepolia();
 
-  const validMembers = Array.from(uniqueMembers.values());
-  if (validMembers.length === 0) {
-    return setError("Add at least one valid wallet address different from your own");
+      // If creator set a username, save it on-chain first
+      const trimmedCreatorName = creatorName.trim();
+      if (trimmedCreatorName) {
+        await setUsername(trimmedCreatorName);
+      }
+
+      await createGroup(trimmedName, validAddresses);
+      router.push("/dashboard");
+      router.refresh();
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Group creation failed";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   }
-
-  setLoading(true);
-  setError("");
-  try {
-    await switchToBaseSepolia();
-    const trimmedCreatorName = creatorName.trim();
-    if (connectedAddress && trimmedCreatorName) {
-      setNickname(connectedAddress, trimmedCreatorName);
-    }
-    // Save nicknames before creating group
-    validMembers.forEach(m => {
-      if (m.name) setNickname(m.address, m.name)
-    })
-    await createGroup(trimmedName, validMembers.map(m => m.address));
-    router.push("/dashboard");
-    router.refresh();
-  } catch (e: unknown) {
-    const errorMessage =
-      e instanceof Error ? e.message : "Group creation failed";
-    setError(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-}
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50">
@@ -99,10 +81,7 @@ async function handleSubmit() {
 
       <header className="border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 text-sm">
-          <Link
-            href="/dashboard"
-            className="text-slate-400 hover:text-slate-100"
-          >
+          <Link href="/dashboard" className="text-slate-400 hover:text-slate-100">
             ← Back
           </Link>
           <span className="text-xs text-slate-600">/</span>
@@ -131,12 +110,15 @@ async function handleSubmit() {
             </div>
 
             <div className="space-y-2">
-              <Label>Your nickname (optional)</Label>
+              <Label>Your username <span className="text-slate-500">(optional)</span></Label>
               <Input
-                placeholder="You in this group"
+                placeholder="How others will see you"
                 value={creatorName}
                 onChange={(e) => setCreatorName(e.target.value)}
               />
+              <p className="text-[11px] text-slate-500">
+                Saved on-chain — visible to all group members across all groups.
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -144,8 +126,7 @@ async function handleSubmit() {
                 <div className="space-y-1">
                   <Label>Members (wallet addresses)</Label>
                   <p className="text-[11px] text-slate-500">
-                    Paste Base-compatible wallet addresses. Invalid rows are
-                    ignored.
+                    Paste Base-compatible wallet addresses. Invalid rows are ignored.
                   </p>
                 </div>
                 <Button
@@ -164,16 +145,8 @@ async function handleSubmit() {
                     <Input
                       placeholder="0x..."
                       value={m.address}
-                      onChange={(e) =>
-                        updateMember(i, "address", e.target.value)
-                      }
+                      onChange={(e) => updateMember(i, e.target.value)}
                       className="flex-1"
-                    />
-                    <Input
-                      placeholder="Nickname (optional)"
-                      value={m.name}
-                      onChange={(e) => updateMember(i, "name", e.target.value)}
-                      className="w-36 shrink-0"
                     />
                     {members.length > 1 && (
                       <Button
@@ -199,6 +172,12 @@ async function handleSubmit() {
             >
               {loading ? "Creating onchain…" : "Create group"}
             </Button>
+
+            {creatorName.trim() && (
+              <p className="text-center text-[11px] text-slate-500">
+                Setting username requires 2 transactions — username first, then group creation.
+              </p>
+            )}
           </div>
         </section>
       </main>

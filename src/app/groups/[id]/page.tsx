@@ -6,11 +6,14 @@ import { useAccount } from "wagmi";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useBalance } from "@/hooks/useBalances";
 import { fromUSDC, getGroup, deactivateGroup } from "@/lib/contract";
-import { resolveAddress } from '@/lib/nicknames'
+import { useUsernames } from '@/hooks/useUsernames'
+import { getCategoryById } from '@/lib/categories'
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SettlementHistory } from '@/components/SettlementHistory'
+import UsernamePrompt from "@/components/UsernamePrompt"
+import { fetchUsername } from "@/lib/nicknames"
 import Link from "next/link";
 
 interface Expense {
@@ -18,17 +21,26 @@ interface Expense {
   description: string;
   payer: string;
   amount: bigint;
+  category: string;
 }
 
-function ExpenseCard({ exp, balance }: { exp: Expense; balance: number }) {
+function ExpenseCard({ exp, balance, resolve }: { 
+  exp: Expense
+  balance: number
+  resolve: (addr: string) => string 
+}) {
+  const cat = getCategoryById(exp.category || 'other')
   return (
-    <Card key={exp.id.toString()} className="p-4">
+    <Card className="p-4">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="text-sm font-medium text-slate-50">
-            {exp.description}
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cat.color}`}>
+              {cat.emoji} {cat.label}
+            </span>
           </div>
-          <div className="text-xs text-slate-400">Paid by {resolveAddress(exp.payer)}</div>
+          <div className="text-sm font-medium text-slate-50">{exp.description}</div>
+          <div className="text-xs text-slate-400">Paid by {resolve(exp.payer)}</div>
         </div>
         <div className="text-right">
           <div className="text-sm font-semibold text-slate-50">
@@ -47,7 +59,7 @@ function ExpenseCard({ exp, balance }: { exp: Expense; balance: number }) {
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
 function ExpenseSkeleton() {
@@ -88,6 +100,7 @@ export default function GroupDetail() {
   const { id } = useParams();
   const router = useRouter();
   const { address } = useAccount();
+  
   const rawId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
   const groupId = rawId ? BigInt(rawId) : null;
   const { expenses, loading } = useExpenses(groupId ?? undefined);
@@ -96,6 +109,9 @@ export default function GroupDetail() {
   const [creator, setCreator] = useState("");
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showUsernamePrompt, setShowUsernamePrompt] = useState(false)
+  const allPayers = expenses.map(e => e.payer)
+const { resolve } = useUsernames(allPayers)
 
   useEffect(() => {
     if (groupId === null) return;
@@ -110,8 +126,13 @@ export default function GroupDetail() {
       .catch(() => {
         if (isMounted) setGroupName("");
       });
+      if (address) {
+        fetchUsername(address).then((name) => {
+          if (isMounted && !name) setShowUsernamePrompt(true)
+        })
+      }
     return () => { isMounted = false; };
-  }, [groupId]);
+  }, [groupId, address]);
 
   const isCreator = address?.toLowerCase() === creator?.toLowerCase()
   const isPageLoading = loading || balanceLoading
@@ -243,8 +264,8 @@ export default function GroupDetail() {
           )}
 
           {!loading && expenses.map((exp) => (
-            <ExpenseCard key={exp.id.toString()} exp={exp} balance={balance} />
-          ))}
+  <ExpenseCard key={exp.id.toString()} exp={exp} balance={balance} resolve={resolve} />
+))}
         </section>
 
         <section className="space-y-3">
@@ -260,6 +281,12 @@ export default function GroupDetail() {
           )}
         </section>
       </main>
+      {showUsernamePrompt && (
+  <UsernamePrompt
+    onComplete={() => setShowUsernamePrompt(false)}
+    onSkip={() => setShowUsernamePrompt(false)}
+  />
+)}
     </div>
   );
 }
