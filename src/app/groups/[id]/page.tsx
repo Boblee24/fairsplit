@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SettlementHistory } from '@/components/SettlementHistory'
+import UsernamePrompt from "@/components/UsernamePrompt"
+import { fetchUsername } from "@/lib/nicknames"
 import Link from "next/link";
 
 interface Expense {
@@ -107,6 +109,7 @@ export default function GroupDetail() {
   const [creator, setCreator] = useState("");
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showUsernamePrompt, setShowUsernamePrompt] = useState(false)
   const allPayers = expenses.map(e => e.payer)
 const { resolve } = useUsernames(allPayers)
 
@@ -123,8 +126,13 @@ const { resolve } = useUsernames(allPayers)
       .catch(() => {
         if (isMounted) setGroupName("");
       });
+      if (address) {
+        fetchUsername(address).then((name) => {
+          if (isMounted && !name) setShowUsernamePrompt(true)
+        })
+      }
     return () => { isMounted = false; };
-  }, [groupId]);
+  }, [groupId, address]);
 
   const isCreator = address?.toLowerCase() === creator?.toLowerCase()
   const isPageLoading = loading || balanceLoading
@@ -273,6 +281,12 @@ const { resolve } = useUsernames(allPayers)
           )}
         </section>
       </main>
+      {showUsernamePrompt && (
+  <UsernamePrompt
+    onComplete={() => setShowUsernamePrompt(false)}
+    onSkip={() => setShowUsernamePrompt(false)}
+  />
+)}
     </div>
   );
 }
