@@ -83,6 +83,7 @@ useEffect(() => {
           receiptHash = await uploadReceipt(receipt);
         } catch (_) {}
       }
+      console.log("category:", category)
       await addExpense(
         BigInt(groupId),
         totalAmount,
