@@ -6,14 +6,14 @@ import { useAccount } from "wagmi";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useBalance } from "@/hooks/useBalances";
 import { fromUSDC, getGroup, deactivateGroup } from "@/lib/contract";
-import { useUsernames } from '@/hooks/useUsernames'
-import { getCategoryById } from '@/lib/categories'
+import { useUsernames } from "@/hooks/useUsernames";
+import { getCategoryById } from "@/lib/categories";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { SettlementHistory } from '@/components/SettlementHistory'
-import UsernamePrompt from "@/components/UsernamePrompt"
-import { fetchUsername } from "@/lib/nicknames"
+import { SettlementHistory } from "@/components/SettlementHistory";
+import UsernamePrompt from "@/components/UsernamePrompt";
+import { fetchUsername } from "@/lib/nicknames";
 import Link from "next/link";
 
 interface Expense {
@@ -22,45 +22,73 @@ interface Expense {
   payer: string;
   amount: bigint;
   category: string;
+  debtors: string[];
+  shares: bigint[];
 }
 
-function ExpenseCard({ exp, balance, resolve }: { 
+function ExpenseCard({ exp, address, balance, resolve }: { 
   exp: Expense
+  address: string | undefined
   balance: number
   resolve: (addr: string) => string 
 }) {
   const cat = getCategoryById(exp.category || 'other')
+
+  const isPayer = address && exp.payer.toLowerCase() === address.toLowerCase()
+  
+  const debtorIndex = address 
+    ? exp.debtors.findIndex(d => d.toLowerCase() === address.toLowerCase())
+    : -1
+  const isDebtor = debtorIndex !== -1
+  const myShare = isDebtor ? fromUSDC(exp.shares[debtorIndex]) : 0
+
+  const badge = () => {
+    if (isPayer) return (
+      <Badge variant="outline" className="mt-1 text-[10px] border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+        You paid
+      </Badge>
+    )
+    if (isDebtor && balance < 0) return (
+      <Badge variant="outline" className="mt-1 text-[10px] border-rose-500/40 bg-rose-500/10 text-rose-400">
+        You owe ${myShare.toFixed(2)}
+      </Badge>
+    )
+    if (isDebtor && balance >= 0) return (
+      <Badge variant="outline" className="mt-1 text-[10px] border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+        Settled
+      </Badge>
+    )
+    return null
+  };
+
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cat.color}`}>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cat.color}`}
+            >
               {cat.emoji} {cat.label}
             </span>
           </div>
-          <div className="text-sm font-medium text-slate-50">{exp.description}</div>
-          <div className="text-xs text-slate-400">Paid by {resolve(exp.payer)}</div>
+          <div className="text-sm font-medium text-slate-50">
+            {exp.description}
+          </div>
+          <div className="text-xs text-slate-400">
+            Paid by {resolve(exp.payer)}
+          </div>
         </div>
         <div className="text-right">
           <div className="text-sm font-semibold text-slate-50">
             ${fromUSDC(exp.amount).toFixed(2)}
           </div>
-          <Badge
-            variant="outline"
-            className={`mt-1 text-[10px] ${
-              balance === 0
-                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                : "border-slate-600/40 bg-slate-800/50 text-slate-400"
-            }`}
-          >
-            {balance === 0 ? "Settled" : "Pending"}
-          </Badge>
+          {badge()}
         </div>
       </div>
     </Card>
-  )
-}
+  );
+};
 
 function ExpenseSkeleton() {
   return (
@@ -76,7 +104,7 @@ function ExpenseSkeleton() {
         </div>
       </div>
     </Card>
-  )
+  );
 }
 
 function SettlementSkeleton() {
@@ -93,25 +121,25 @@ function SettlementSkeleton() {
         </div>
       </div>
     </Card>
-  )
+  );
 }
 
 export default function GroupDetail() {
   const { id } = useParams();
   const router = useRouter();
   const { address } = useAccount();
-  
+
   const rawId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
   const groupId = rawId ? BigInt(rawId) : null;
   const { expenses, loading } = useExpenses(groupId ?? undefined);
   const { balance, loading: balanceLoading } = useBalance(groupId ?? undefined);
   const [groupName, setGroupName] = useState("");
   const [creator, setCreator] = useState("");
-  const [deleting, setDeleting] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [showUsernamePrompt, setShowUsernamePrompt] = useState(false)
-  const allPayers = expenses.map(e => e.payer)
-const { resolve } = useUsernames(allPayers)
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
+  const allPayers = expenses.map((e) => e.payer);
+  const { resolve } = useUsernames(allPayers);
 
   useEffect(() => {
     if (groupId === null) return;
@@ -126,31 +154,33 @@ const { resolve } = useUsernames(allPayers)
       .catch(() => {
         if (isMounted) setGroupName("");
       });
-      if (address) {
-        fetchUsername(address).then((name) => {
-          if (isMounted && !name) setShowUsernamePrompt(true)
-        })
-      }
-    return () => { isMounted = false; };
+    if (address) {
+      fetchUsername(address).then((name) => {
+        if (isMounted && !name) setShowUsernamePrompt(true);
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
   }, [groupId, address]);
 
-  const isCreator = address?.toLowerCase() === creator?.toLowerCase()
-  const isPageLoading = loading || balanceLoading
+  const isCreator = address?.toLowerCase() === creator?.toLowerCase();
+  const isPageLoading = loading || balanceLoading;
 
   async function handleDelete() {
-    if (!confirmDelete) return setConfirmDelete(true)
-    setDeleting(true)
+    if (!confirmDelete) return setConfirmDelete(true);
+    setDeleting(true);
     try {
-      if (groupId === null) return
-      await deactivateGroup(groupId)
-      router.push('/dashboard')
-      router.refresh()
+      if (groupId === null) return;
+      await deactivateGroup(groupId);
+      router.push("/dashboard");
+      router.refresh();
     } catch (e: unknown) {
       const errorMessage =
-      e instanceof Error ? e.message : "Group deletion failed";
-      console.error(errorMessage)
-      setDeleting(false)
-      setConfirmDelete(false)
+        e instanceof Error ? e.message : "Group deletion failed";
+      console.error(errorMessage);
+      setDeleting(false);
+      setConfirmDelete(false);
     }
   }
 
@@ -160,7 +190,10 @@ const { resolve } = useUsernames(allPayers)
 
       <header className="border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 text-sm">
-          <Link href="/dashboard" className="text-slate-400 hover:text-slate-100">
+          <Link
+            href="/dashboard"
+            className="text-slate-400 hover:text-slate-100"
+          >
             Back
           </Link>
           <span className="text-xs text-slate-600">/</span>
@@ -174,11 +207,15 @@ const { resolve } = useUsernames(allPayers)
               disabled={deleting}
               className={`h-7 rounded-full px-3 text-xs font-medium transition-all ${
                 confirmDelete
-                  ? 'bg-red-600 text-white hover:bg-red-700'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-red-400'
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-red-400"
               }`}
             >
-              {deleting ? 'Deleting...' : confirmDelete ? 'Confirm delete' : 'Delete group'}
+              {deleting
+                ? "Deleting..."
+                : confirmDelete
+                  ? "Confirm delete"
+                  : "Delete group"}
             </Button>
           )}
         </div>
@@ -204,8 +241,11 @@ const { resolve } = useUsernames(allPayers)
               </div>
             ) : (
               <>
-                <div className={`mt-2 text-3xl font-semibold ${balance >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                  {balance >= 0 ? "+" : ""}{balance.toFixed(2)} USDC
+                <div
+                  className={`mt-2 text-3xl font-semibold ${balance >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+                >
+                  {balance >= 0 ? "+" : ""}
+                  {balance.toFixed(2)} USDC
                 </div>
                 <p className="mt-1 text-xs text-slate-400">
                   {balance >= 0
@@ -226,7 +266,9 @@ const { resolve } = useUsernames(allPayers)
           <Card className="p-5">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-xs font-medium text-slate-400">Group activity</p>
+                <p className="text-xs font-medium text-slate-400">
+                  Group activity
+                </p>
                 {loading ? (
                   <div className="mt-2 h-4 w-32 animate-pulse rounded-full bg-slate-800/80" />
                 ) : (
@@ -264,7 +306,7 @@ const { resolve } = useUsernames(allPayers)
           )}
 
           {!loading && expenses.map((exp) => (
-  <ExpenseCard key={exp.id.toString()} exp={exp} balance={balance} resolve={resolve} />
+  <ExpenseCard key={exp.id.toString()} exp={exp} address={address} balance={balance} resolve={resolve} />
 ))}
         </section>
 
@@ -276,17 +318,17 @@ const { resolve } = useUsernames(allPayers)
                 <SettlementSkeleton key={index} />
               ))}
             </div>
-          ) : (
-            groupId !== null ? <SettlementHistory groupId={groupId} /> : null
-          )}
+          ) : groupId !== null ? (
+            <SettlementHistory groupId={groupId} />
+          ) : null}
         </section>
       </main>
       {showUsernamePrompt && (
-  <UsernamePrompt
-    onComplete={() => setShowUsernamePrompt(false)}
-    onSkip={() => setShowUsernamePrompt(false)}
-  />
-)}
+        <UsernamePrompt
+          onComplete={() => setShowUsernamePrompt(false)}
+          onSkip={() => setShowUsernamePrompt(false)}
+        />
+      )}
     </div>
   );
 }
