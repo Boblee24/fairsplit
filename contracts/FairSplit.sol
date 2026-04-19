@@ -30,6 +30,7 @@ contract FairSplit is ReentrancyGuard, Ownable {
         address payer;
         uint256 amount;
         string description;
+        string category; 
         string receiptHash;
         address[] debtors;
         uint256[] shares;
@@ -42,6 +43,7 @@ contract FairSplit is ReentrancyGuard, Ownable {
     mapping(uint256 => mapping(address => int256)) public balances;
     mapping(address => uint256[]) public userGroups;
     mapping(address => uint256) public reputationScore;
+    mapping(address => string) public usernames;
 
     // Events for all state changes
     event GroupCreated(uint256 indexed groupId, string name, address indexed creator);
@@ -121,6 +123,7 @@ function addExpense(
     uint256 amount,
     string calldata description,
     string calldata receiptHash,
+    string calldata category,
     address[] calldata debtors,
     uint256[] calldata shares
 ) external onlyGroupMember(groupId) groupExists(groupId) {
@@ -144,6 +147,7 @@ function addExpense(
         amount: amount,
         description: description,
         receiptHash: receiptHash,
+        category: category,
         debtors: debtors,
         shares: shares,
         settled: false,
@@ -242,4 +246,11 @@ function _updateBalances(
     function getExpenseCount() external view returns (uint256) {
         return expenseCounter;
     }
+    function setUsername(string calldata name) external {
+    usernames[msg.sender] = name;
+}
+
+function getUsername(address user) external view returns (string memory) {
+    return usernames[user];
+}
 }
