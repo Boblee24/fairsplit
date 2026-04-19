@@ -78,32 +78,37 @@ export function NotificationBell() {
             )}
 
             {!loading && notifications.map((n) => (
-              <Link
-                key={n.id}
-                href={`/groups/${n.groupId}`}
-                onClick={() => setOpen(false)}
-                className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 last:border-0 ${
-                  !n.read ? "bg-slate-800/30" : ""
-                }`}
-              >
-                <span className="mt-0.5 text-base shrink-0">{icon[n.type]}</span>
-                <div className="space-y-0.5 min-w-0">
-                  <p className="text-xs text-slate-200 leading-snug">{n.message}</p>
-                  
-                    <a href={`https://sepolia.basescan.org/tx/${n.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={e => e.stopPropagation()}
-                    className="text-[10px] text-sky-500 hover:text-sky-400"
-                  >
-                    View tx ↗
-                  </a>
-                </div>
-                {!n.read && (
-                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-                )}
-              </Link>
-            ))}
+  <div
+    key={n.id}
+    className={`flex items-start gap-3 px-4 py-3 border-b border-slate-800/50 last:border-0 ${
+      !n.read ? "bg-slate-800/30" : ""
+    }`}
+  >
+    <span className="mt-0.5 text-base shrink-0">{icon[n.type]}</span>
+    <div className="space-y-0.5 min-w-0 flex-1">
+      <Link
+        href={`/groups/${n.groupId}`}
+        onClick={() => setOpen(false)}
+        className="text-xs text-slate-200 leading-snug hover:text-white transition-colors"
+      >
+        {n.message}
+      </Link>
+      <div>
+        <a
+          href={`https://sepolia.basescan.org/tx/${n.txHash}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] text-sky-500 hover:text-sky-400"
+        >
+          View tx ↗
+        </a>
+      </div>
+    </div>
+    {!n.read && (
+      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+    )}
+  </div>
+))}
           </div>
         </div>
       )}
