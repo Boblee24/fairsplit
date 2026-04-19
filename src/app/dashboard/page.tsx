@@ -9,6 +9,8 @@ import { WalletConnect } from '@/components/WalletConnect'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import Link from 'next/link'
+import { NotificationBell } from '@/components/NotificationBell'
+
 
 function GroupCardSkeleton() {
   return (
@@ -48,7 +50,10 @@ export default function Dashboard() {
               Dashboard
             </span>
           </div>
-          <WalletConnect />
+          <div className="flex items-center gap-2">
+  <NotificationBell />
+  <WalletConnect />
+</div>
         </div>
       </header>
 
