@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { createPublicClient, http, parseAbiItem } from 'viem'
 import { baseSepolia } from 'wagmi/chains'
-import { getUserGroups } from '@/lib/contract'
+import { getUserGroups, getGroup } from '@/lib/contract'
 import { fetchUsername, formatWithName } from '@/lib/nicknames'
 
 const client = createPublicClient({
@@ -17,10 +17,12 @@ const MAX_CHUNKS = 5
 const EXPENSE_EVENT = parseAbiItem('event ExpenseAdded(uint256 indexed groupId, uint256 indexed expenseId, address indexed payer, uint256 amount)')
 const SETTLE_EVENT = parseAbiItem('event Settled(uint256 indexed groupId, address indexed from, address indexed to, uint256 amount)')
 const MEMBER_EVENT = parseAbiItem('event MemberAdded(uint256 indexed groupId, address indexed member)')
+const GROUP_CREATED_EVENT = parseAbiItem('event GroupCreated(uint256 indexed groupId, string name, address indexed creator)')
 
 type ExpenseLog = Awaited<ReturnType<typeof client.getLogs<typeof EXPENSE_EVENT>>>[number]
 type SettleLog = Awaited<ReturnType<typeof client.getLogs<typeof SETTLE_EVENT>>>[number]
 type MemberLog = Awaited<ReturnType<typeof client.getLogs<typeof MEMBER_EVENT>>>[number]
+type GroupCreatedLog = Awaited<ReturnType<typeof client.getLogs<typeof GROUP_CREATED_EVENT>>>[number]
 
 export type Notification = {
   id: string
@@ -33,12 +35,13 @@ export type Notification = {
 }
 
 async function fetchLogs(fromBlock: bigint, toBlock: bigint) {
-  const [expenseLogs, settleLogs, memberLogs] = await Promise.all([
+  const [expenseLogs, settleLogs, memberLogs, groupCreatedLogs] = await Promise.all([
     client.getLogs({ address: CONTRACT_ADDRESS, event: EXPENSE_EVENT, fromBlock, toBlock }),
     client.getLogs({ address: CONTRACT_ADDRESS, event: SETTLE_EVENT, fromBlock, toBlock }),
     client.getLogs({ address: CONTRACT_ADDRESS, event: MEMBER_EVENT, fromBlock, toBlock }),
+    client.getLogs({ address: CONTRACT_ADDRESS, event: GROUP_CREATED_EVENT, fromBlock, toBlock }),
   ])
-  return { expenseLogs, settleLogs, memberLogs }
+  return { expenseLogs, settleLogs, memberLogs, groupCreatedLogs }
 }
 
 const STORAGE_KEY = 'fairsplit_read_notifications'
@@ -77,15 +80,17 @@ export function useNotifications() {
         let allExpense: ExpenseLog[] = []
         let allSettle: SettleLog[] = []
         let allMember: MemberLog[] = []
+        let allGroupCreated: GroupCreatedLog[] = []
 
         let toBlock = latestBlock
         let fromBlock = toBlock > CHUNK ? toBlock - CHUNK : 0n
 
         for (let i = 0; i < MAX_CHUNKS; i++) {
-          const { expenseLogs, settleLogs, memberLogs } = await fetchLogs(fromBlock, toBlock)
+          const { expenseLogs, settleLogs, memberLogs, groupCreatedLogs } = await fetchLogs(fromBlock, toBlock)
           allExpense = [...allExpense, ...expenseLogs]
           allSettle = [...allSettle, ...settleLogs]
           allMember = [...allMember, ...memberLogs]
+          allGroupCreated = [...allGroupCreated, ...groupCreatedLogs]
           if (fromBlock === 0n) break
           toBlock = fromBlock - 1n
           fromBlock = toBlock > CHUNK ? toBlock - CHUNK : 0n
@@ -95,6 +100,24 @@ export function useNotifications() {
         allExpense = allExpense.filter(l => groupIdSet.has(l.args.groupId?.toString() ?? ''))
         allSettle = allSettle.filter(l => groupIdSet.has(l.args.groupId?.toString() ?? ''))
         allMember = allMember.filter(l => groupIdSet.has(l.args.groupId?.toString() ?? ''))
+
+        // Build set of txHashes where user was the group creator
+        const creatorTxHashes = new Set(
+          allGroupCreated
+            .filter(l => l.args.creator?.toLowerCase() === address!.toLowerCase())
+            .map(l => l.transactionHash)
+        )
+
+        // Fetch group names
+        const groupNameMap: Record<string, string> = {}
+        for (const gId of groupIds) {
+          try {
+            const g = await getGroup(gId) as any
+            groupNameMap[gId.toString()] = g[1] || `Group #${gId}`
+          } catch {
+            groupNameMap[gId.toString()] = `Group #${gId}`
+          }
+        }
 
         const readIds = getReadIds()
         const notifs: Notification[] = []
@@ -106,12 +129,13 @@ export function useNotifications() {
           const name = await fetchUsername(payer)
           const label = formatWithName(payer, name)
           const groupId = log.args.groupId?.toString() ?? ''
+          const groupName = groupNameMap[groupId] ?? `Group #${groupId}`
           const amount = Number(log.args.amount ?? 0n) / 1_000_000
           const id = log.transactionHash ?? `${log.blockNumber}-expense`
           notifs.push({
             id,
             type: 'expense_added',
-            message: `${label} added a $${amount.toFixed(2)} expense in group #${groupId}`,
+            message: `${label} added a $${amount.toFixed(2)} expense in ${groupName}`,
             groupId,
             txHash: log.transactionHash ?? '',
             blockNumber: log.blockNumber ?? 0n,
@@ -127,12 +151,13 @@ export function useNotifications() {
           const name = await fetchUsername(from ?? '')
           const label = formatWithName(from ?? '', name)
           const groupId = log.args.groupId?.toString() ?? ''
+          const groupName = groupNameMap[groupId] ?? `Group #${groupId}`
           const amount = Number(log.args.amount ?? 0n) / 1_000_000
           const id = log.transactionHash ?? `${log.blockNumber}-settle`
           notifs.push({
             id,
             type: 'settled',
-            message: `${label} paid you $${amount.toFixed(2)} in group #${groupId}`,
+            message: `${label} paid you $${amount.toFixed(2)} in ${groupName}`,
             groupId,
             txHash: log.transactionHash ?? '',
             blockNumber: log.blockNumber ?? 0n,
@@ -140,16 +165,18 @@ export function useNotifications() {
           })
         }
 
-        // MemberAdded — only notify the member being added
+        // MemberAdded — only notify the member being added, skip if they created the group
         for (const log of allMember) {
           const member = log.args.member
           if (!member || member.toLowerCase() !== address!.toLowerCase()) continue
+          if (creatorTxHashes.has(log.transactionHash)) continue
           const groupId = log.args.groupId?.toString() ?? ''
+          const groupName = groupNameMap[groupId] ?? `Group #${groupId}`
           const id = `${log.transactionHash}-member`
           notifs.push({
             id,
             type: 'member_added',
-            message: `You were added to group #${groupId}`,
+            message: `You were added to ${groupName}`,
             groupId,
             txHash: log.transactionHash ?? '',
             blockNumber: log.blockNumber ?? 0n,
