@@ -21,7 +21,7 @@ export default function SettlePage() {
   const { groupId } = useParams();
   const router = useRouter();
   const { address } = useAccount();
-   const parsedGroupId = BigInt(groupId as string);
+  const parsedGroupId = BigInt(groupId as string);
   const { balance } = useBalance(parsedGroupId);
   const [creditor, setCreditor] = useState("");
   const [creditors, setCreditors] = useState<
@@ -30,7 +30,7 @@ export default function SettlePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-   const creditorAddresses = creditors.map((c) => c.address);
+  const creditorAddresses = creditors.map((c) => c.address);
   const { resolve } = useUsernames(creditorAddresses);
 
   useEffect(() => {
