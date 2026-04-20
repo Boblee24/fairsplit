@@ -1,40 +1,65 @@
-'use client'
+"use client";
 
-import { useAccount } from 'wagmi'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { WalletConnect } from '@/components/WalletConnect'
+import { useAccount } from "wagmi";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { WalletConnect } from "@/components/WalletConnect";
 
 const TICKER = [
-  { from: 'ayo.base.eth', to: 'tunde.base.eth', amount: '12.50', label: 'Lagos dinner' },
-  { from: 'kemi.base.eth', to: 'david.base.eth', amount: '34.00', label: 'Airbnb split' },
-  { from: '0x4f3c...9a1b', to: 'sara.base.eth', amount: '8.75', label: 'Taxi fare' },
-  { from: 'mike.base.eth', to: '0x8d2f...3c7e', amount: '55.20', label: 'Weekend trip' },
-  { from: 'amaka.base.eth', to: 'jide.base.eth', amount: '6.00', label: 'Coffee run' },
-]
+  {
+    from: "ayo.base.eth",
+    to: "tunde.base.eth",
+    amount: "12.50",
+    label: "Lagos dinner",
+  },
+  {
+    from: "kemi.base.eth",
+    to: "david.base.eth",
+    amount: "34.00",
+    label: "Airbnb split",
+  },
+  {
+    from: "0x4f3c...9a1b",
+    to: "sara.base.eth",
+    amount: "8.75",
+    label: "Taxi fare",
+  },
+  {
+    from: "mike.base.eth",
+    to: "0x8d2f...3c7e",
+    amount: "55.20",
+    label: "Weekend trip",
+  },
+  {
+    from: "amaka.base.eth",
+    to: "jide.base.eth",
+    amount: "6.00",
+    label: "Coffee run",
+  },
+];
 
 export default function Home() {
-  const { isConnected } = useAccount()
-  const router = useRouter()
-  const [tickerIndex, setTickerIndex] = useState(0)
-  const [visible, setVisible] = useState(true)
+  const { isConnected } = useAccount();
+  const router = useRouter();
+  const [tickerIndex, setTickerIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    if (isConnected) router.push('/dashboard')
-  }, [isConnected, router])
+    if (isConnected) router.push("/dashboard");
+  }, [isConnected, router]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setVisible(false)
+      setVisible(false);
       setTimeout(() => {
-        setTickerIndex(i => (i + 1) % TICKER.length)
-        setVisible(true)
-      }, 400)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
+        setTickerIndex((i) => (i + 1) % TICKER.length);
+        setVisible(true);
+      }, 400);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const tick = TICKER[tickerIndex]
+  const tick = TICKER[tickerIndex];
 
   return (
     <>
@@ -378,7 +403,9 @@ export default function Home() {
         <div className="fs-wrap">
           {/* NAV */}
           <nav className="fs-nav anim-1">
-            <div className="fs-logo">Fair<span>Split</span></div>
+            <div className="fs-logo">
+              Fair<span>Split</span>
+            </div>
             <div className="fs-badge">BASE SEPOLIA · TESTNET</div>
           </nav>
 
@@ -386,13 +413,15 @@ export default function Home() {
           <section className="fs-hero">
             <div>
               <h1 className="fs-headline anim-2">
-                Split bills.<br />
-                Settle <em>instantly.</em><br />
+                Split bills.
+                <br />
+                Settle <em>instantly.</em>
+                <br />
                 On Base.
               </h1>
               <p className="fs-sub anim-3">
-                Group expenses settled in USDC on Base — no banks, no IOUs,
-                no chasing people for money. Just fair splits, confirmed on-chain.
+                Group expenses settled in USDC on Base — no banks, no IOUs, no
+                chasing people for money. Just fair splits, confirmed on-chain.
               </p>
 
               <div className="fs-cta anim-4">
@@ -428,11 +457,31 @@ export default function Home() {
                 </div>
                 <div className="fs-members">
                   {[
-                    { name: 'ayo.base.eth', amt: '+$90.00', type: 'paid', label: 'paid' },
-                    { name: 'tunde.base.eth', amt: '-$30.00', type: 'owed', label: 'owes' },
-                    { name: '0x4f3c...9a1b', amt: '-$30.00', type: 'owed', label: 'owes' },
-                    { name: 'kemi.base.eth', amt: '-$30.00', type: 'owed', label: 'owes' },
-                  ].map(m => (
+                    {
+                      name: "ayo.base.eth",
+                      amt: "+$90.00",
+                      type: "paid",
+                      label: "paid",
+                    },
+                    {
+                      name: "tunde.base.eth",
+                      amt: "-$30.00",
+                      type: "owed",
+                      label: "owes",
+                    },
+                    {
+                      name: "0x4f3c...9a1b",
+                      amt: "-$30.00",
+                      type: "owed",
+                      label: "owes",
+                    },
+                    {
+                      name: "kemi.base.eth",
+                      amt: "-$30.00",
+                      type: "owed",
+                      label: "owes",
+                    },
+                  ].map((m) => (
                     <div className="fs-member" key={m.name}>
                       <span className="fs-member-name">{m.name}</span>
                       <span className={`fs-member-amt ${m.type}`}>{m.amt}</span>
@@ -444,7 +493,7 @@ export default function Home() {
               {/* LIVE TICKER */}
               <div className="fs-ticker anim-6">
                 <div className="fs-ticker-dot" />
-                <div className={`fs-ticker-text ${visible ? '' : 'hidden'}`}>
+                <div className={`fs-ticker-text ${visible ? "" : "hidden"}`}>
                   <span className="name">{tick.from}</span>
                   <span> settled with </span>
                   <span className="name">{tick.to}</span>
@@ -459,21 +508,21 @@ export default function Home() {
           <div className="fs-features anim-4">
             {[
               {
-                icon: '🌍',
-                title: 'Truly borderless',
-                desc: 'Send USDC to anyone, anywhere. No bank transfers, no FX fees, no waiting.',
+                icon: "🌍",
+                title: "Truly borderless",
+                desc: "Send USDC to anyone, anywhere. No bank transfers, no FX fees, no waiting.",
               },
               {
-                icon: '🔐',
-                title: 'Non-custodial',
-                desc: 'Your wallet, your funds. FairSplit never touches your money — the contract does.',
+                icon: "🔐",
+                title: "Non-custodial",
+                desc: "Your wallet, your funds. FairSplit never touches your money — the contract does.",
               },
               {
-                icon: '🧾',
-                title: 'On-chain receipts',
-                desc: 'Every expense and settlement is recorded on Base. Immutable, verifiable, forever.',
+                icon: "🧾",
+                title: "On-chain receipts",
+                desc: "Every expense and settlement is recorded on Base. Immutable, verifiable, forever.",
               },
-            ].map(f => (
+            ].map((f) => (
               <div className="fs-feature" key={f.title}>
                 <div className="fs-feature-icon">{f.icon}</div>
                 <div className="fs-feature-title">{f.title}</div>
@@ -493,5 +542,5 @@ export default function Home() {
         </div>
       </div>
     </>
-  )
+  );
 }
