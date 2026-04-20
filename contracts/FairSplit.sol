@@ -5,9 +5,16 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IERC20 {
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool);
     function balanceOf(address account) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
 }
 
 contract FairSplit is ReentrancyGuard, Ownable {
@@ -30,7 +37,7 @@ contract FairSplit is ReentrancyGuard, Ownable {
         address payer;
         uint256 amount;
         string description;
-        string category; 
+        string category;
         string receiptHash;
         address[] debtors;
         uint256[] shares;
@@ -46,10 +53,24 @@ contract FairSplit is ReentrancyGuard, Ownable {
     mapping(address => string) public usernames;
 
     // Events for all state changes
-    event GroupCreated(uint256 indexed groupId, string name, address indexed creator);
+    event GroupCreated(
+        uint256 indexed groupId,
+        string name,
+        address indexed creator
+    );
     event MemberAdded(uint256 indexed groupId, address indexed member);
-    event ExpenseAdded(uint256 indexed groupId, uint256 indexed expenseId, address indexed payer, uint256 amount);
-    event Settled(uint256 indexed groupId, address indexed from, address indexed to, uint256 amount);
+    event ExpenseAdded(
+        uint256 indexed groupId,
+        uint256 indexed expenseId,
+        address indexed payer,
+        uint256 amount
+    );
+    event Settled(
+        uint256 indexed groupId,
+        address indexed from,
+        address indexed to,
+        uint256 amount
+    );
     event GroupDeactivated(uint256 indexed groupId);
 
     // Custom errors (cheaper than strings)
@@ -118,57 +139,62 @@ contract FairSplit is ReentrancyGuard, Ownable {
 
     // ─── ADD EXPENSE ──────────────────────────────────────────────────────────
 
-function addExpense(
-    uint256 groupId,
-    uint256 amount,
-    string calldata description,
-    string calldata receiptHash,
-    string calldata category,
-    address[] calldata debtors,
-    uint256[] calldata shares
-) external onlyGroupMember(groupId) groupExists(groupId) {
-    if (amount == 0) revert InvalidAmount();
-    if (debtors.length != shares.length) revert ArrayLengthMismatch();
-    require(debtors.length > 0, "Must have at least one debtor");
+    function addExpense(
+        uint256 groupId,
+        uint256 amount,
+        string calldata description,
+        string calldata receiptHash,
+        string calldata category,
+        address[] calldata debtors,
+        uint256[] calldata shares
+    ) external onlyGroupMember(groupId) groupExists(groupId) {
+        if (amount == 0) revert InvalidAmount();
+        if (debtors.length != shares.length) revert ArrayLengthMismatch();
+        require(debtors.length > 0, "Must have at least one debtor");
 
-    uint256 totalShares = 0;
-    for (uint256 i = 0; i < debtors.length; i++) {
-        require(groups[groupId].isMember[debtors[i]], "Debtor not in group");
-        require(shares[i] > 0, "Share must be greater than zero");
-        totalShares += shares[i];
+        uint256 totalShares = 0;
+        for (uint256 i = 0; i < debtors.length; i++) {
+            require(
+                groups[groupId].isMember[debtors[i]],
+                "Debtor not in group"
+            );
+            require(shares[i] > 0, "Share must be greater than zero");
+            totalShares += shares[i];
+        }
+        require(totalShares <= amount, "Shares exceed total amount");
+
+        expenseCounter++;
+        groupExpenses[groupId].push(
+            Expense({
+                id: expenseCounter,
+                groupId: groupId,
+                payer: msg.sender,
+                amount: amount,
+                description: description,
+                receiptHash: receiptHash,
+                category: category,
+                debtors: debtors,
+                shares: shares,
+                settled: false,
+                timestamp: block.timestamp
+            })
+        );
+
+        _updateBalances(groupId, msg.sender, debtors, shares);
+        emit ExpenseAdded(groupId, expenseCounter, msg.sender, amount);
     }
-    require(totalShares <= amount, "Shares exceed total amount");
 
-    expenseCounter++;
-    groupExpenses[groupId].push(Expense({
-        id: expenseCounter,
-        groupId: groupId,
-        payer: msg.sender,
-        amount: amount,
-        description: description,
-        receiptHash: receiptHash,
-        category: category,
-        debtors: debtors,
-        shares: shares,
-        settled: false,
-        timestamp: block.timestamp
-    }));
-
-    _updateBalances(groupId, msg.sender, debtors, shares);
-    emit ExpenseAdded(groupId, expenseCounter, msg.sender, amount);
-}
-
-function _updateBalances(
-    uint256 groupId,
-    address payer,
-    address[] calldata debtors,
-    uint256[] calldata shares
-) internal {
-    for (uint256 i = 0; i < debtors.length; i++) {
-        balances[groupId][payer] += int256(shares[i]);
-        balances[groupId][debtors[i]] -= int256(shares[i]);
+    function _updateBalances(
+        uint256 groupId,
+        address payer,
+        address[] calldata debtors,
+        uint256[] calldata shares
+    ) internal {
+        for (uint256 i = 0; i < debtors.length; i++) {
+            balances[groupId][payer] += int256(shares[i]);
+            balances[groupId][debtors[i]] -= int256(shares[i]);
+        }
     }
-}
 
     // ─── SETTLE DEBT ──────────────────────────────────────────────────────────
     // nonReentrant + checks-effects-interactions pattern
@@ -181,7 +207,8 @@ function _updateBalances(
         if (amount == 0) revert InvalidAmount();
         if (balances[groupId][msg.sender] >= 0) revert NoDebtInGroup();
         if (balances[groupId][creditor] <= 0) revert CreditorNotOwed();
-        if (uint256(-balances[groupId][msg.sender]) < amount) revert ExceedsDebt();
+        if (uint256(-balances[groupId][msg.sender]) < amount)
+            revert ExceedsDebt();
 
         // EFFECTS first (checks-effects-interactions)
         balances[groupId][msg.sender] += int256(amount);
@@ -208,30 +235,46 @@ function _updateBalances(
 
     // ─── VIEWS ────────────────────────────────────────────────────────────────
 
-    function getGroup(uint256 groupId) external view returns (
-        uint256 id,
-        string memory name,
-        address[] memory members,
-        address creator,
-        bool isActive
-    ) {
+    function getGroup(
+        uint256 groupId
+    )
+        external
+        view
+        returns (
+            uint256 id,
+            string memory name,
+            address[] memory members,
+            address creator,
+            bool isActive
+        )
+    {
         Group storage g = groups[groupId];
         return (g.id, g.name, g.members, g.creator, g.isActive);
     }
 
-    function isMember(uint256 groupId, address user) external view returns (bool) {
+    function isMember(
+        uint256 groupId,
+        address user
+    ) external view returns (bool) {
         return groups[groupId].isMember[user];
     }
 
-    function getGroupExpenses(uint256 groupId) external view returns (Expense[] memory) {
+    function getGroupExpenses(
+        uint256 groupId
+    ) external view returns (Expense[] memory) {
         return groupExpenses[groupId];
     }
 
-    function getUserGroups(address user) external view returns (uint256[] memory) {
+    function getUserGroups(
+        address user
+    ) external view returns (uint256[] memory) {
         return userGroups[user];
     }
 
-    function getBalance(uint256 groupId, address user) external view returns (int256) {
+    function getBalance(
+        uint256 groupId,
+        address user
+    ) external view returns (int256) {
         return balances[groupId][user];
     }
 
@@ -247,10 +290,10 @@ function _updateBalances(
         return expenseCounter;
     }
     function setUsername(string calldata name) external {
-    usernames[msg.sender] = name;
-}
+        usernames[msg.sender] = name;
+    }
 
-function getUsername(address user) external view returns (string memory) {
-    return usernames[user];
-}
+    function getUsername(address user) external view returns (string memory) {
+        return usernames[user];
+    }
 }
