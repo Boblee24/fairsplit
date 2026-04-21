@@ -1,33 +1,33 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { setUsername } from "@/lib/nicknames"
-import { switchToBaseSepolia } from "@/lib/contract"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useState } from "react";
+import { setUsername } from "@/lib/nicknames";
+import { switchToBaseSepolia } from "@/lib/contract";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = {
-  onComplete: (name: string) => void
-  onSkip: () => void
-}
+  onComplete: (name: string) => void;
+  onSkip: () => void;
+};
 
 export default function UsernamePrompt({ onComplete, onSkip }: Props) {
-  const [name, setName] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSave() {
-    if (!name.trim()) return setError("Enter a username")
-    setLoading(true)
-    setError("")
+    if (!name.trim()) return setError("Enter a username");
+    setLoading(true);
+    setError("");
     try {
-      await switchToBaseSepolia()
-      await setUsername(name.trim())
-      onComplete(name.trim())
+      await switchToBaseSepolia();
+      await setUsername(name.trim());
+      onComplete(name.trim());
     } catch {
-      setError("Failed to save — try again")
+      setError("Failed to save — try again");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -35,9 +35,12 @@ export default function UsernamePrompt({ onComplete, onSkip }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
       <div className="w-full max-w-sm rounded-3xl border border-slate-700/80 bg-slate-900 p-6 shadow-2xl space-y-4">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-slate-50">Set your username</h2>
+          <h2 className="text-base font-semibold text-slate-50">
+            Set your username
+          </h2>
           <p className="text-xs text-slate-400">
-            This is how other group members will see you across all groups. Saved on-chain — set it once, use it everywhere.
+            This is how other group members will see you across all groups.
+            Saved on-chain — set it once, use it everywhere.
           </p>
         </div>
 
@@ -74,5 +77,5 @@ export default function UsernamePrompt({ onComplete, onSkip }: Props) {
         </p>
       </div>
     </div>
-  )
+  );
 }
