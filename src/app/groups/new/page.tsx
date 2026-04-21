@@ -44,13 +44,16 @@ export default function NewGroup() {
       if (
         connectedAddress &&
         normalized.toLowerCase() === connectedAddress.toLowerCase()
-      ) return;
+      )
+        return;
       uniqueMembers.set(normalized.toLowerCase(), normalized);
     });
 
     const validAddresses = Array.from(uniqueMembers.values());
     if (validAddresses.length === 0) {
-      return setError("Add at least one valid wallet address different from your own");
+      return setError(
+        "Add at least one valid wallet address different from your own",
+      );
     }
 
     setLoading(true);
@@ -68,7 +71,8 @@ export default function NewGroup() {
       router.push("/dashboard");
       router.refresh();
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : "Group creation failed";
+      const errorMessage =
+        e instanceof Error ? e.message : "Group creation failed";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -81,7 +85,10 @@ export default function NewGroup() {
 
       <header className="border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 text-sm">
-          <Link href="/dashboard" className="text-slate-400 hover:text-slate-100">
+          <Link
+            href="/dashboard"
+            className="text-slate-400 hover:text-slate-100"
+          >
             ← Back
           </Link>
           <span className="text-xs text-slate-600">/</span>
@@ -110,7 +117,9 @@ export default function NewGroup() {
             </div>
 
             <div className="space-y-2">
-              <Label>Your username <span className="text-slate-500">(optional)</span></Label>
+              <Label>
+                Your username <span className="text-slate-500">(optional)</span>
+              </Label>
               <Input
                 placeholder="How others will see you"
                 value={creatorName}
@@ -126,7 +135,8 @@ export default function NewGroup() {
                 <div className="space-y-1">
                   <Label>Members (wallet addresses)</Label>
                   <p className="text-[11px] text-slate-500">
-                    Paste Base-compatible wallet addresses. Invalid rows are ignored.
+                    Paste Base-compatible wallet addresses. Invalid rows are
+                    ignored.
                   </p>
                 </div>
                 <Button
@@ -175,7 +185,8 @@ export default function NewGroup() {
 
             {creatorName.trim() && (
               <p className="text-center text-[11px] text-slate-500">
-                Setting username requires 2 transactions — username first, then group creation.
+                Setting username requires 2 transactions — username first, then
+                group creation.
               </p>
             )}
           </div>
