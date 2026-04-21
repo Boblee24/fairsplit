@@ -8,7 +8,7 @@ export const config = getDefaultConfig({
   projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID!,
   chains: [baseSepolia],
   transports: {
-    [baseSepolia.id]: http("https://sepolia.base.org"), // your custom RPC kept
+    [baseSepolia.id]: http("https://sepolia.base.org"),
   },
   ssr: true,
 });
