@@ -26,39 +26,56 @@ interface Expense {
   shares: bigint[];
 }
 
-function ExpenseCard({ exp, address, balance, resolve }: { 
-  exp: Expense
-  address: string | undefined
-  balance: number
-  resolve: (addr: string) => string 
+function ExpenseCard({
+  exp,
+  address,
+  balance,
+  resolve,
+}: {
+  exp: Expense;
+  address: string | undefined;
+  balance: number;
+  resolve: (addr: string) => string;
 }) {
-  const cat = getCategoryById(exp.category || 'other')
+  const cat = getCategoryById(exp.category || "other");
 
-  const isPayer = address && exp.payer.toLowerCase() === address.toLowerCase()
-  
-  const debtorIndex = address 
-    ? exp.debtors.findIndex(d => d.toLowerCase() === address.toLowerCase())
-    : -1
-  const isDebtor = debtorIndex !== -1
-  const myShare = isDebtor ? fromUSDC(exp.shares[debtorIndex]) : 0
+  const isPayer = address && exp.payer.toLowerCase() === address.toLowerCase();
+
+  const debtorIndex = address
+    ? exp.debtors.findIndex((d) => d.toLowerCase() === address.toLowerCase())
+    : -1;
+  const isDebtor = debtorIndex !== -1;
+  const myShare = isDebtor ? fromUSDC(exp.shares[debtorIndex]) : 0;
 
   const badge = () => {
-    if (isPayer) return (
-      <Badge variant="outline" className="mt-1 text-[10px] border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-        You paid
-      </Badge>
-    )
-    if (isDebtor && balance < 0) return (
-      <Badge variant="outline" className="mt-1 text-[10px] border-rose-500/40 bg-rose-500/10 text-rose-400">
-        You owe ${myShare.toFixed(2)}
-      </Badge>
-    )
-    if (isDebtor && balance >= 0) return (
-      <Badge variant="outline" className="mt-1 text-[10px] border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-        Settled
-      </Badge>
-    )
-    return null
+    if (isPayer)
+      return (
+        <Badge
+          variant="outline"
+          className="mt-1 text-[10px] border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+        >
+          You paid
+        </Badge>
+      );
+    if (isDebtor && balance < 0)
+      return (
+        <Badge
+          variant="outline"
+          className="mt-1 text-[10px] border-rose-500/40 bg-rose-500/10 text-rose-400"
+        >
+          You owe ${myShare.toFixed(2)}
+        </Badge>
+      );
+    if (isDebtor && balance >= 0)
+      return (
+        <Badge
+          variant="outline"
+          className="mt-1 text-[10px] border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+        >
+          Settled
+        </Badge>
+      );
+    return null;
   };
 
   return (
@@ -88,7 +105,7 @@ function ExpenseCard({ exp, address, balance, resolve }: {
       </div>
     </Card>
   );
-};
+}
 
 function ExpenseSkeleton() {
   return (
@@ -305,9 +322,16 @@ export default function GroupDetail() {
             </Card>
           )}
 
-          {!loading && expenses.map((exp) => (
-  <ExpenseCard key={exp.id.toString()} exp={exp} address={address} balance={balance} resolve={resolve} />
-))}
+          {!loading &&
+            expenses.map((exp) => (
+              <ExpenseCard
+                key={exp.id.toString()}
+                exp={exp}
+                address={address}
+                balance={balance}
+                resolve={resolve}
+              />
+            ))}
         </section>
 
         <section className="space-y-3">
