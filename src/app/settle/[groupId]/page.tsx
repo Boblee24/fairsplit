@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useUsernames } from "@/hooks/useUsernames";
+import { parseContractError } from "@/lib/error";
 import Link from "next/link";
 
 export default function SettlePage() {
@@ -89,9 +90,7 @@ export default function SettlePage() {
       setSuccess(true);
       setTimeout(() => router.push(`/groups/${groupId}`), 2000);
     } catch (e: unknown) {
-      const errorMessage =
-        e instanceof Error ? e.message : "Transaction failed";
-      setError(errorMessage);
+      setError(parseContractError(e));
     } finally {
       setLoading(false);
     }

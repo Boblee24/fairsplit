@@ -5,6 +5,7 @@ import { setUsername } from "@/lib/nicknames";
 import { switchToBaseSepolia } from "@/lib/contract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { parseContractError } from "@/lib/error";
 
 type Props = {
   onComplete: (name: string) => void;
@@ -24,23 +25,23 @@ export default function UsernamePrompt({ onComplete, onSkip }: Props) {
       await switchToBaseSepolia();
       await setUsername(name.trim());
       onComplete(name.trim());
-    } catch {
-      setError("Failed to save — try again");
+    } catch (e: unknown) {
+      setError(parseContractError(e));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
-      <div className="w-full max-w-sm rounded-3xl border border-slate-700/80 bg-slate-900 p-6 shadow-2xl space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm space-y-4 rounded-3xl border border-slate-700/80 bg-slate-900 p-6 shadow-2xl">
         <div className="space-y-1">
           <h2 className="text-base font-semibold text-slate-50">
             Set your username
           </h2>
           <p className="text-xs text-slate-400">
             This is how other group members will see you across all groups.
-            Saved on-chain — set it once, use it everywhere.
+            Saved on-chain - set it once, use it everywhere.
           </p>
         </div>
 
@@ -58,7 +59,7 @@ export default function UsernamePrompt({ onComplete, onSkip }: Props) {
           <Button
             onClick={handleSave}
             disabled={loading}
-            className="flex-1 h-10 rounded-full bg-gradient-to-r from-emerald-500 to-sky-400 text-sm font-medium text-slate-950 hover:from-emerald-400 hover:to-sky-300"
+            className="h-10 flex-1 rounded-full bg-gradient-to-r from-emerald-500 to-sky-400 text-sm font-medium text-slate-950 hover:from-emerald-400 hover:to-sky-300"
           >
             {loading ? "Saving..." : "Save username"}
           </Button>
