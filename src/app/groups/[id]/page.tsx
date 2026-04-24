@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { SettlementHistory } from "@/components/SettlementHistory";
 import UsernamePrompt from "@/components/UsernamePrompt";
 import { fetchUsername } from "@/lib/nicknames";
+import { parseContractError } from "@/lib/error";
 import Link from "next/link";
 
 interface Expense {
@@ -154,6 +155,7 @@ export default function GroupDetail() {
   const [creator, setCreator] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
   const allPayers = expenses.map((e) => e.payer);
   const { resolve } = useUsernames(allPayers);
@@ -187,15 +189,14 @@ export default function GroupDetail() {
   async function handleDelete() {
     if (!confirmDelete) return setConfirmDelete(true);
     setDeleting(true);
+    setDeleteError("");
     try {
       if (groupId === null) return;
       await deactivateGroup(groupId);
       router.push("/dashboard");
       router.refresh();
     } catch (e: unknown) {
-      const errorMessage =
-        e instanceof Error ? e.message : "Group deletion failed";
-      console.error(errorMessage);
+      setDeleteError(parseContractError(e));
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -304,6 +305,12 @@ export default function GroupDetail() {
             </div>
           </Card>
         </section>
+
+        {deleteError && (
+          <Card className="border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+            {deleteError}
+          </Card>
+        )}
 
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-slate-100">Expenses</h2>

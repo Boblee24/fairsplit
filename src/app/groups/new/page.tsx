@@ -10,6 +10,7 @@ import { getAddress, isAddress } from "viem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { parseContractError } from "@/lib/error";
 import Link from "next/link";
 
 export default function NewGroup() {
@@ -71,9 +72,7 @@ export default function NewGroup() {
       router.push("/dashboard");
       router.refresh();
     } catch (e: unknown) {
-      const errorMessage =
-        e instanceof Error ? e.message : "Group creation failed";
-      setError(errorMessage);
+      setError(parseContractError(e));
     } finally {
       setLoading(false);
     }
@@ -143,7 +142,7 @@ export default function NewGroup() {
                   variant="outline"
                   size="sm"
                   onClick={addMember}
-                  className="h-8 rounded-full border-slate-700/80 bg-slate-900/60 px-3 text-[11px] text-slate-200 hover:border-sky-400/80 hover:bg-slate-900"
+                  className="h-8 rounded-full border-slate-700/80 bg-slate-900/60 px-3 text-[11px] text-slate-200 hover:border-sky-400/80 hover:bg-slate-900 hover:text-slate-200"
                 >
                   + Add member
                 </Button>
