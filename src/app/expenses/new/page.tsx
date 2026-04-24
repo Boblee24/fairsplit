@@ -11,6 +11,7 @@ import CategoryPicker from "@/components/CategoryPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { parseContractError } from "@/lib/error";
 import Link from "next/link";
 
 function AddExpenseForm() {
@@ -101,7 +102,7 @@ function AddExpenseForm() {
       );
       router.push(`/groups/${groupId}`);
     } catch (e: unknown) {
-      setError((e as Error).message || "Failed to add expense");
+      setError(parseContractError(e));
     } finally {
       setLoading(false);
     }
