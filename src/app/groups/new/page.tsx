@@ -142,7 +142,7 @@ export default function NewGroup() {
                   variant="outline"
                   size="sm"
                   onClick={addMember}
-                  className="h-8 rounded-full border-slate-700/80 bg-slate-900/60 px-3 text-[11px] text-slate-200 hover:border-sky-400/80 hover:bg-slate-900"
+                  className="h-8 rounded-full border-slate-700/80 bg-slate-900/60 px-3 text-[11px] text-slate-200 hover:border-sky-400/80 hover:bg-slate-900 hover:text-slate-200"
                 >
                   + Add member
                 </Button>
