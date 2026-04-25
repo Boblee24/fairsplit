@@ -1,72 +1,142 @@
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import Link from "next/link";
+import "@/styles/fairsplit-theme.css";
+
+const TIPS = [
+  {
+    label: "Check the URL",
+    desc:  "A missing or mistyped group ID can land you on a dead route.",
+  },
+  {
+    label: "Refresh state",
+    desc:  "If you just created or deleted a group, the app may still be catching up.",
+  },
+  {
+    label: "Return safely",
+    desc:  "Jump back to the dashboard to pick an active group from your list.",
+  },
+];
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen bg-linear-to-br from-slate-950 via-slate-950 to-slate-900 px-4 text-slate-50">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.28),transparent_55%),radial-gradient(circle_at_bottom,rgba(129,140,248,0.28),transparent_55%)] opacity-80" />
+    <div className="fs-page" style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", padding:"2rem 1rem" }}>
+      <div className="fs-mesh"    aria-hidden />
+      <div className="fs-texture" aria-hidden />
 
-      <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center">
-        <section className="w-full rounded-3xl border border-slate-800/70 bg-slate-900/60 px-8 py-10 text-center shadow-[0_30px_80px_rgba(15,23,42,0.9)] backdrop-blur-2xl">
-          <div className="mx-auto inline-flex rounded-full border border-slate-700/60 bg-slate-900/70 px-3 py-1 text-xs font-medium text-slate-300">
-            Error 404
-          </div>
+      <div className="relative z-10 w-full max-w-2xl">
 
-          <div className="mt-6 space-y-3">
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              This split slipped
-              <span className="block bg-linear-to-r from-sky-400 via-emerald-400 to-indigo-400 bg-clip-text text-transparent">
-                off the ledger
-              </span>
-            </h1>
-            <p className="mx-auto max-w-xl text-sm text-slate-400 sm:text-base">
-              The page you tried to open does not exist, may have moved, or is no longer available.
-              Let&apos;s get you back to an active group.
-            </p>
-          </div>
+        {/* Main card */}
+        <div
+          className="fs-animate fs-d1"
+          style={{
+            background: "var(--fs-surface)",
+            border: "1px solid var(--fs-border-mid)",
+            borderRadius: "var(--fs-radius-xl)",
+            padding: "clamp(2rem, 5vw, 3rem)",
+            textAlign: "center",
+            boxShadow: "0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--fs-border-accent)",
+          }}
+        >
+          {/* Error badge */}
+          <span className="fs-badge fs-badge-accent">Error 404</span>
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              asChild
-              className="h-10 rounded-full bg-linear-to-r from-sky-500 via-emerald-400 to-indigo-500 px-6 text-sm font-medium text-slate-950 shadow-[0_18px_45px_rgba(56,189,248,0.65)] hover:from-sky-400 hover:via-emerald-300 hover:to-indigo-400"
+          {/* Headline */}
+          <h1
+            className="fs-animate fs-d2"
+            style={{
+              fontFamily: "var(--fs-display)",
+              fontSize: "clamp(2rem, 7vw, 3.2rem)",
+              color: "var(--fs-text)",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.1,
+              marginTop: "1.25rem",
+            }}
+          >
+            This split slipped
+            <span
+              style={{
+                display: "block",
+                color: "var(--fs-accent)",
+                fontStyle: "italic",
+              }}
             >
-              <Link href="/">Go Home</Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="h-10 rounded-full border-slate-700/80 bg-slate-900/60 px-6 text-sm text-slate-100 hover:border-sky-400/80 hover:bg-slate-900"
-            >
-              <Link href="/dashboard">Open Dashboard</Link>
-            </Button>
+              off the ledger.
+            </span>
+          </h1>
+
+          {/* Sub */}
+          <p
+            className="fs-animate fs-d3"
+            style={{
+              fontFamily: "var(--fs-ui)",
+              fontSize: "0.9rem",
+              color: "var(--fs-text-2)",
+              lineHeight: 1.7,
+              maxWidth: 420,
+              margin: "1rem auto 0",
+            }}
+          >
+            The page you tried to open doesn&apos;t exist, may have moved, or is no longer available. Let's get you back to an active group.
+          </p>
+
+          {/* Buttons */}
+          <div
+            className="fs-animate fs-d4"
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"0.75rem", flexWrap:"wrap", marginTop:"2rem" }}
+          >
+            <Link href="/" className="fs-btn fs-btn-primary fs-btn-md">
+              Go Home
+            </Link>
+            <Link href="/dashboard" className="fs-btn fs-btn-ghost fs-btn-md">
+              Open Dashboard
+            </Link>
           </div>
 
-          <div className="mt-8 grid gap-3 text-left sm:grid-cols-3">
-            {[
-              {
-                label: 'Check the URL',
-                desc: 'A missing or mistyped group id can land you on a dead route.',
-              },
-              {
-                label: 'Refresh state',
-                desc: 'If you just created or deleted a group, the app may still be catching up.',
-              },
-              {
-                label: 'Return safely',
-                desc: 'Jump back to the dashboard to pick an active group from your list.',
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-[0_0_40px_rgba(15,23,42,0.9)]"
-              >
-                <div className="text-sm font-medium text-slate-100">{item.label}</div>
-                <div className="mt-1 text-xs text-slate-400">{item.desc}</div>
-              </div>
-            ))}
+          {/* Divider */}
+          <div
+            className="fs-animate fs-d5"
+            style={{ borderTop:"1px solid var(--fs-border)", marginTop:"2rem", paddingTop:"1.75rem" }}
+          >
+            {/* Tips grid */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:"0.75rem", textAlign:"left" }}>
+              {TIPS.map((tip, i) => (
+                <div
+                  key={tip.label}
+                  className={`fs-animate fs-d${i + 6}`}
+                  style={{
+                    background: "var(--fs-surface-2)",
+                    border: "1px solid var(--fs-border)",
+                    borderRadius: "var(--fs-radius)",
+                    padding: "0.9rem 1rem",
+                  }}
+                >
+                  <p style={{ fontFamily:"var(--fs-ui)", fontSize:"0.8rem", fontWeight:700, color:"var(--fs-text)", marginBottom:"0.3rem" }}>
+                    {tip.label}
+                  </p>
+                  <p style={{ fontFamily:"var(--fs-ui)", fontSize:"0.72rem", color:"var(--fs-muted)", lineHeight:1.55 }}>
+                    {tip.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-        </section>
+
+          {/* Footer mono note */}
+          <p
+            className="fs-animate fs-d9"
+            style={{
+              fontFamily: "var(--fs-mono)",
+              fontSize: "9px",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--fs-muted)",
+              marginTop: "1.75rem",
+              opacity: 0.5,
+            }}
+          >
+            FairSplit · Base Sepolia · On-chain expense splitting
+          </p>
+        </div>
       </div>
-    </main>
-  )
+    </div>
+  );
 }
