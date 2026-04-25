@@ -2,6 +2,14 @@ import { useEffect, useState } from "react";
 import { getGroupExpenses } from "@/lib/contract";
 import type { Expense } from "@/types";
 
+function sortExpenses(expenses: Expense[]) {
+  return [...expenses].sort((a, b) => {
+    if (a.settled !== b.settled) return Number(a.settled) - Number(b.settled);
+    if (a.timestamp !== b.timestamp) return Number(b.timestamp - a.timestamp);
+    return Number(b.id - a.id);
+  });
+}
+
 export function useExpenses(groupId: bigint | undefined) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +25,7 @@ export function useExpenses(groupId: bigint | undefined) {
     setExpenses([]);
     getGroupExpenses(groupId)
       .then((data) => {
-        setExpenses(data as Expense[]);
+        setExpenses(sortExpenses(data as Expense[]));
         setLoading(false);
       })
       .catch(() => setLoading(false));
