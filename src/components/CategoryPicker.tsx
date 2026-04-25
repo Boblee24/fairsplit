@@ -1,48 +1,124 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { CATEGORIES } from "@/lib/categories"
+import { useState } from "react";
+import { CATEGORIES } from "@/lib/categories";
+import "@/styles/fairsplit-theme.css";
 
 type Props = {
-  value: string
-  onChange: (categoryId: string) => void
-}
+  value: string;
+  onChange: (categoryId: string) => void;
+};
 
 export default function CategoryPicker({ value, onChange }: Props) {
-  const [open, setOpen] = useState(false)
-  const selected = CATEGORIES.find((c) => c.id === value) ?? CATEGORIES[CATEGORIES.length - 1]
+  const [open, setOpen] = useState(false);
+  const selected = CATEGORIES.find((c) => c.id === value) ?? CATEGORIES[CATEGORIES.length - 1];
 
   return (
-    <div className="relative">
+    <div style={{ position: "relative" }}>
+      {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-800/50 text-sm text-slate-100 hover:border-slate-600 transition-colors"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.6rem",
+          padding: "0.6rem 0.85rem",
+          background: "var(--fs-surface-2)",
+          border: `1px solid ${open ? "var(--fs-border-accent)" : "var(--fs-border-mid)"}`,
+          borderRadius: "var(--fs-radius-sm)",
+          color: "var(--fs-text)",
+          fontFamily: "var(--fs-ui)",
+          fontSize: "0.875rem",
+          cursor: "pointer",
+          transition: "border-color .15s, box-shadow .15s",
+          boxShadow: open ? "0 0 0 3px var(--fs-accent-dim)" : "none",
+          outline: "none",
+        }}
       >
-        <span className="text-base">{selected.emoji}</span>
+        <span style={{ fontSize: "1.05rem" }}>{selected.emoji}</span>
         <span>{selected.label}</span>
-        <span className="ml-auto text-slate-500 text-xs">{open ? "▴" : "▾"}</span>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontFamily: "var(--fs-mono)",
+            fontSize: "9px",
+            color: "var(--fs-muted)",
+            transition: "transform .2s",
+            display: "inline-block",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        >
+          ▾
+        </span>
       </button>
 
+      {/* Dropdown */}
       {open && (
-        <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-900 shadow-2xl p-2 grid grid-cols-3 gap-1">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => { onChange(cat.id); setOpen(false) }}
-              className={`flex flex-col items-center gap-1 rounded-lg px-2 py-2.5 text-xs transition-all hover:bg-slate-800 ${
-                value === cat.id
-                  ? "ring-1 ring-emerald-500 bg-emerald-500/10 text-emerald-300"
-                  : "text-slate-400"
-              }`}
-            >
-              <span className="text-lg">{cat.emoji}</span>
-              <span className="text-center leading-tight">{cat.label}</span>
-            </button>
-          ))}
+        <div
+          style={{
+            position: "absolute",
+            zIndex: 20,
+            top: "calc(100% + 6px)",
+            left: 0,
+            right: 0,
+            background: "var(--fs-surface)",
+            border: "1px solid var(--fs-border-accent)",
+            borderRadius: "var(--fs-radius)",
+            padding: "0.5rem",
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "0.25rem",
+            boxShadow: "0 16px 40px rgba(0,0,0,0.45), 0 0 0 1px var(--fs-border-accent)",
+          }}
+        >
+          {CATEGORIES.map((cat) => {
+            const isSelected = value === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => { onChange(cat.id); setOpen(false); }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "0.6rem 0.4rem",
+                  borderRadius: "var(--fs-radius-sm)",
+                  border: isSelected
+                    ? "1px solid var(--fs-border-accent)"
+                    : "1px solid transparent",
+                  background: isSelected ? "var(--fs-accent-dim)" : "transparent",
+                  color: isSelected ? "var(--fs-accent)" : "var(--fs-muted)",
+                  fontFamily: "var(--fs-ui)",
+                  fontSize: "0.7rem",
+                  cursor: "pointer",
+                  transition: "background .15s, color .15s, border-color .15s",
+                  lineHeight: 1.3,
+                  textAlign: "center",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.background = "var(--fs-surface-2)";
+                    e.currentTarget.style.color      = "var(--fs-text-2)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color      = "var(--fs-muted)";
+                  }
+                }}
+              >
+                <span style={{ fontSize: "1.2rem" }}>{cat.emoji}</span>
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
-  )
+  );
 }

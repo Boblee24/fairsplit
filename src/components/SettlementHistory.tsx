@@ -5,7 +5,7 @@ import { createPublicClient, http, parseAbiItem, Log, parseEventLogs } from 'vie
 import { baseSepolia } from 'wagmi/chains'
 import { fromUSDC } from '@/lib/contract'
 import { fetchUsername, formatWithName } from '@/lib/nicknames'
-import { Card } from '@/components/ui/card'
+import "@/styles/fairsplit-theme.css"
 
 const client = createPublicClient({
   chain: baseSepolia,
@@ -24,135 +24,160 @@ interface Settlement {
 
 export function SettlementHistory({ groupId }: { groupId: bigint }) {
   const [settlements, setSettlements] = useState<Settlement[]>([])
-  const [loading, setLoading] = useState(true)
-  const [names, setNames] = useState<Record<string, string>>({})
+  const [loading,     setLoading]     = useState(true)
+  const [names,       setNames]       = useState<Record<string, string>>({})
 
-// Add this effect after the settlements fetch effect:
-useEffect(() => {
-  if (!settlements.length) return
-  const uniqueAddresses = [...new Set(settlements.flatMap(s => [s.from, s.to]))]
-  Promise.all(
-    uniqueAddresses.map(async (addr) => {
-      const name = await fetchUsername(addr)
-      return [addr.toLowerCase(), formatWithName(addr, name)] as const
-    })
-  ).then(entries => setNames(Object.fromEntries(entries)))
-}, [settlements])
-
-const resolve = (addr: string) => 
-  names[addr.toLowerCase()] ?? `${addr.slice(0, 6)}...${addr.slice(-4)}`
-
-useEffect(() => {
-  async function fetchSettlements() {
-    try {
-      const latestBlock = await client.getBlockNumber()
-      const CHUNK = 9000n
-      let allLogs: Log[] = []
-
-      // Query in 9000-block chunks from latest backwards
-      let toBlock = latestBlock
-      let fromBlock = toBlock > CHUNK ? toBlock - CHUNK : 0n
-
-      // Go back up to 5 chunks (~45000 blocks ≈ last few days on Base Sepolia)
-      for (let i = 0; i < 5; i++) {
-        const logs = await client.getLogs({
-          address: CONTRACT_ADDRESS,
-          event: parseAbiItem(
-            'event Settled(uint256 indexed groupId, address indexed from, address indexed to, uint256 amount)'
-          ),
-          args: { groupId },
-          fromBlock,
-          toBlock,
-        })
-
-        allLogs = [...allLogs, ...logs]
-
-        if (fromBlock === 0n) break
-        toBlock = fromBlock - 1n
-        fromBlock = toBlock > CHUNK ? toBlock - CHUNK : 0n
-      }
-
-      const parsed: Settlement[] = parseEventLogs({
-        logs: allLogs,
-        abi: [parseAbiItem('event Settled(uint256 indexed groupId, address indexed from, address indexed to, uint256 amount)')],
-        eventName: 'Settled',
+  useEffect(() => {
+    if (!settlements.length) return
+    const unique = [...new Set(settlements.flatMap((s) => [s.from, s.to]))]
+    Promise.all(
+      unique.map(async (addr) => {
+        const name = await fetchUsername(addr)
+        return [addr.toLowerCase(), formatWithName(addr, name)] as const
       })
-        .map(log => ({
-          from: log.args.from as string,
-          to: log.args.to as string,
-          amount: log.args.amount as bigint,
-          txHash: log.transactionHash ?? '',
-          blockNumber: log.blockNumber ?? 0n,
-        }))
-        .sort((a, b) => (a.blockNumber > b.blockNumber ? -1 : 1))
+    ).then((entries) => setNames(Object.fromEntries(entries)))
+  }, [settlements])
 
-      setSettlements(parsed)
-    } catch (e) {
-      console.error('Failed to fetch settlements', e)
-    } finally {
-      setLoading(false)
+  const resolve = (addr: string) =>
+    names[addr.toLowerCase()] ?? `${addr.slice(0, 6)}…${addr.slice(-4)}`
+
+  useEffect(() => {
+    async function fetchSettlements() {
+      try {
+        const latestBlock = await client.getBlockNumber()
+        const CHUNK = 9000n
+        let allLogs: Log[] = []
+        let toBlock   = latestBlock
+        let fromBlock = toBlock > CHUNK ? toBlock - CHUNK : 0n
+
+        for (let i = 0; i < 5; i++) {
+          const logs = await client.getLogs({
+            address: CONTRACT_ADDRESS,
+            event: parseAbiItem(
+              'event Settled(uint256 indexed groupId, address indexed from, address indexed to, uint256 amount)'
+            ),
+            args: { groupId },
+            fromBlock,
+            toBlock,
+          })
+          allLogs = [...allLogs, ...logs]
+          if (fromBlock === 0n) break
+          toBlock   = fromBlock - 1n
+          fromBlock = toBlock > CHUNK ? toBlock - CHUNK : 0n
+        }
+
+        const parsed: Settlement[] = parseEventLogs({
+          logs: allLogs,
+          abi: [parseAbiItem('event Settled(uint256 indexed groupId, address indexed from, address indexed to, uint256 amount)')],
+          eventName: 'Settled',
+        })
+          .map((log) => ({
+            from:        log.args.from as string,
+            to:          log.args.to   as string,
+            amount:      log.args.amount as bigint,
+            txHash:      log.transactionHash ?? '',
+            blockNumber: log.blockNumber     ?? 0n,
+          }))
+          .sort((a, b) => (a.blockNumber > b.blockNumber ? -1 : 1))
+
+        setSettlements(parsed)
+      } catch (e) {
+        console.error('Failed to fetch settlements', e)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+    fetchSettlements()
+  }, [groupId])
 
-  fetchSettlements()
-}, [groupId])
-
+  /* ── Loading ── */
   if (loading) {
     return (
       <div className="space-y-2">
-        {Array.from({ length: 2 }).map((_, index) => (
-          <Card key={index} className="p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-2">
-                <div className="h-4 w-40 animate-pulse rounded-full bg-slate-800/80" />
-                <div className="h-3 w-24 animate-pulse rounded-full bg-slate-800/60" />
+        {[0, 1].map((i) => (
+          <div
+            key={i}
+            className="fs-card"
+            style={{ padding: '1rem 1.15rem' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="fs-skeleton" style={{ height: 13, width: 160, animationDelay: `${i * 0.15}s` }} />
+                <div className="fs-skeleton" style={{ height: 10, width: 100, animationDelay: `${i * 0.15 + 0.2}s` }} />
               </div>
-              <div className="space-y-2 text-right">
-                <div className="ml-auto h-4 w-16 animate-pulse rounded-full bg-slate-800/80" />
-                <div className="ml-auto h-3 w-20 animate-pulse rounded-full bg-slate-800/60" />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                <div className="fs-skeleton" style={{ height: 13, width: 60, animationDelay: `${i * 0.15}s` }} />
+                <div className="fs-skeleton" style={{ height: 10, width: 75, animationDelay: `${i * 0.15 + 0.2}s` }} />
               </div>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
     )
   }
 
+  /* ── Empty ── */
   if (settlements.length === 0) {
     return (
-      <Card className="items-center justify-center gap-3 py-8 text-center text-xs text-slate-400">
-        <p>No settlements yet.</p>
-      </Card>
+      <div className="fs-empty" style={{ padding: '2rem' }}>
+        <p style={{ fontFamily: 'var(--fs-ui)', fontSize: '0.78rem', color: 'var(--fs-muted)' }}>
+          No settlements yet.
+        </p>
+      </div>
     )
   }
 
+  /* ── List ── */
   return (
     <div className="space-y-2">
       {settlements.map((s, i) => (
-        <Card key={i} className="p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="text-sm font-medium text-slate-50">
-                {resolve(s.from)}{''}
-                <span className="text-slate-500">→</span>{' '}
-                {resolve(s.to)}
-              </div>
+        <div
+          key={i}
+          className={`fs-card fs-animate fs-d${Math.min(i + 1, 9)}`}
+          style={{ padding: '1rem 1.15rem' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+
+            {/* Left: from → to + tx link */}
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontFamily: 'var(--fs-ui)', fontSize: '0.85rem', fontWeight: 600, color: 'var(--fs-text)', marginBottom: 4 }}>
+                <span style={{ color: 'var(--fs-text-2)' }}>{resolve(s.from)}</span>
+                {' '}
+                <span style={{ color: 'var(--fs-muted)', fontWeight: 400, margin: '0 2px' }}>→</span>
+                {' '}
+                <span style={{ color: 'var(--fs-text)' }}>{resolve(s.to)}</span>
+              </p>
               <a
                 href={`https://sepolia.basescan.org/tx/${s.txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-sky-500 hover:text-sky-400">
+                style={{
+                  fontFamily: 'var(--fs-mono)',
+                  fontSize: '9.5px',
+                  letterSpacing: '0.06em',
+                  color: 'var(--fs-accent)',
+                  textDecoration: 'none',
+                  opacity: 0.75,
+                  transition: 'opacity .15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.75')}
+              >
                 View on Basescan ↗
               </a>
             </div>
-            <div className="text-right">
-              <div className="text-sm font-semibold text-emerald-400">
+
+            {/* Right: amount + label */}
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <p style={{ fontFamily: 'var(--fs-mono)', fontSize: '0.9rem', fontWeight: 600, color: 'var(--fs-positive)' }}>
                 +${fromUSDC(s.amount).toFixed(2)}
-              </div>
-              <div className="mt-1 text-[10px] text-slate-500">Settled on-chain</div>
+              </p>
+              <span className="fs-badge fs-badge-positive" style={{ marginTop: 5, display: 'inline-block' }}>
+                Settled
+              </span>
             </div>
           </div>
-        </Card>
+        </div>
       ))}
     </div>
   )
