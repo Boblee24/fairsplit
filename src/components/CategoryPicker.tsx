@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { CATEGORIES } from "@/lib/categories";
-import "@/styles/fairsplit-theme.css";
 
 type Props = {
   value: string;

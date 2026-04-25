@@ -4,7 +4,6 @@ import { useState } from "react";
 import { setUsername } from "@/lib/nicknames";
 import { switchToBaseSepolia } from "@/lib/contract";
 import { parseContractError } from "@/lib/error";
-import "@/styles/fairsplit-theme.css";
 
 type Props = {
   onComplete: (name: string) => void;

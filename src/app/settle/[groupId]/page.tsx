@@ -8,7 +8,6 @@ import { settleDebt, getGroup, getBalance } from "@/lib/contract";
 import { useUsernames } from "@/hooks/useUsernames";
 import { parseContractError } from "@/lib/error";
 import Link from "next/link";
-import "@/styles/fairsplit-theme.css";
 
 export default function SettlePage() {
   const { groupId } = useParams();

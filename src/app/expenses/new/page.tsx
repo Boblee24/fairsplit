@@ -9,7 +9,6 @@ import { fetchUsername, formatWithName } from "@/lib/nicknames";
 import CategoryPicker from "@/components/CategoryPicker";
 import { parseContractError } from "@/lib/error";
 import Link from "next/link";
-import "@/styles/fairsplit-theme.css";
 
 function AddExpenseForm() {
   const router = useRouter();

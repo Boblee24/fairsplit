@@ -8,7 +8,6 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { WalletConnect } from "@/components/WalletConnect";
 import { NotificationBell } from "@/components/NotificationBell";
 import Link from "next/link";
-import "@/styles/fairsplit-theme.css";
 
 function getInitials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();

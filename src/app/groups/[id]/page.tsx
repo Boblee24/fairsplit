@@ -13,7 +13,6 @@ import UsernamePrompt from "@/components/UsernamePrompt";
 import { fetchUsername } from "@/lib/nicknames";
 import { parseContractError } from "@/lib/error";
 import Link from "next/link";
-import "@/styles/fairsplit-theme.css";
 
 interface Expense {
   id: bigint;

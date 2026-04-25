@@ -5,7 +5,6 @@ import { createPublicClient, http, parseAbiItem, Log, parseEventLogs } from 'vie
 import { baseSepolia } from 'wagmi/chains'
 import { fromUSDC } from '@/lib/contract'
 import { fetchUsername, formatWithName } from '@/lib/nicknames'
-import "@/styles/fairsplit-theme.css"
 
 const client = createPublicClient({
   chain: baseSepolia,

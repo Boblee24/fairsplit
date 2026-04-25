@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 import Link from "next/link";
-import "@/styles/fairsplit-theme.css";
 
 const TYPE_ICON: Record<string, string> = {
   expense_added: "💸",

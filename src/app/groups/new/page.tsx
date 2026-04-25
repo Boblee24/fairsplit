@@ -9,7 +9,6 @@ import { config } from "@/lib/wagmi";
 import { getAddress, isAddress } from "viem";
 import { parseContractError } from "@/lib/error";
 import Link from "next/link";
-import "@/styles/fairsplit-theme.css";
 
 export default function NewGroup() {
   const router = useRouter();
