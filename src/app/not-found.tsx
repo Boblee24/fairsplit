@@ -1,3 +1,6 @@
+// app/not-found.tsx
+// Pure server component — NO "use client", NO CSS imports, NO external deps.
+// All styles are inline so this page never triggers a compile chain.
 import Link from "next/link";
 
 const TIPS = [
@@ -17,125 +20,188 @@ const TIPS = [
 
 export default function NotFound() {
   return (
-    <div className="fs-page" style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", padding:"2rem 1rem" }}>
-      <div className="fs-mesh"    aria-hidden />
-      <div className="fs-texture" aria-hidden />
+    <>
+      {/* Scoped styles — no external file needed */}
+      <style>{`
+        .nf-page {
+          min-height: 100vh;
+          background: #091918;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem 1rem;
+          font-family: system-ui, sans-serif;
+          color: #e8f5f4;
+          position: relative;
+          overflow: hidden;
+        }
+        .nf-mesh {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(ellipse 80% 55% at 15% -5%,  rgba(0,210,180,0.12) 0%, transparent 65%),
+            radial-gradient(ellipse 55% 45% at 90% 110%, rgba(0,180,160,0.08) 0%, transparent 60%);
+        }
+        .nf-card {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          max-width: 680px;
+          background: #0d2322;
+          border: 1px solid rgba(0,210,180,0.20);
+          border-radius: 20px;
+          padding: clamp(2rem, 5vw, 3rem);
+          text-align: center;
+          box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,210,180,0.15);
+        }
+        .nf-badge {
+          display: inline-flex;
+          align-items: center;
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #00d2b4;
+          background: rgba(0,210,180,0.09);
+          border: 1px solid rgba(0,210,180,0.42);
+          padding: 3px 10px;
+          border-radius: 999px;
+          font-family: 'Courier New', monospace;
+        }
+        .nf-h1 {
+          margin: 1.2rem 0 0;
+          font-size: clamp(2rem, 6vw, 3rem);
+          font-weight: 700;
+          line-height: 1.1;
+          letter-spacing: -0.02em;
+          color: #e8f5f4;
+        }
+        .nf-h1 em {
+          display: block;
+          font-style: italic;
+          color: #00d2b4;
+          font-weight: 400;
+        }
+        .nf-sub {
+          margin: 1rem auto 0;
+          max-width: 420px;
+          font-size: 0.9rem;
+          color: rgba(232,245,244,0.62);
+          line-height: 1.7;
+        }
+        .nf-btns {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          margin-top: 2rem;
+        }
+        .nf-btn-primary {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #00d2b4;
+          color: #071312;
+          font-weight: 700;
+          font-size: 0.85rem;
+          border-radius: 999px;
+          padding: 0.65rem 1.5rem;
+          text-decoration: none;
+          transition: opacity .15s, transform .15s;
+        }
+        .nf-btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+        .nf-btn-ghost {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: transparent;
+          color: #00d2b4;
+          font-weight: 700;
+          font-size: 0.85rem;
+          border-radius: 999px;
+          border: 1px solid rgba(0,210,180,0.42);
+          padding: 0.65rem 1.5rem;
+          text-decoration: none;
+          transition: background .15s;
+        }
+        .nf-btn-ghost:hover { background: rgba(0,210,180,0.09); }
+        .nf-divider {
+          border: none;
+          border-top: 1px solid rgba(0,210,180,0.09);
+          margin: 2rem 0 1.75rem;
+        }
+        .nf-tips {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 0.75rem;
+          text-align: left;
+        }
+        .nf-tip {
+          background: #112b2a;
+          border: 1px solid rgba(0,210,180,0.09);
+          border-radius: 12px;
+          padding: 0.9rem 1rem;
+        }
+        .nf-tip-title {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: #e8f5f4;
+          margin-bottom: 0.3rem;
+        }
+        .nf-tip-desc {
+          font-size: 0.72rem;
+          color: rgba(232,245,244,0.38);
+          line-height: 1.55;
+        }
+        .nf-footer {
+          margin-top: 1.75rem;
+          font-size: 9px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: rgba(232,245,244,0.20);
+          font-family: 'Courier New', monospace;
+        }
+      `}</style>
 
-      <div className="relative z-10 w-full max-w-2xl">
+      <div className="nf-page">
+        <div className="nf-mesh" aria-hidden />
 
-        {/* Main card */}
-        <div
-          className="fs-animate fs-d1"
-          style={{
-            background: "var(--fs-surface)",
-            border: "1px solid var(--fs-border-mid)",
-            borderRadius: "var(--fs-radius-xl)",
-            padding: "clamp(2rem, 5vw, 3rem)",
-            textAlign: "center",
-            boxShadow: "0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--fs-border-accent)",
-          }}
-        >
-          {/* Error badge */}
-          <span className="fs-badge fs-badge-accent">Error 404</span>
+        <div className="nf-card">
+          <span className="nf-badge">Error 404</span>
 
-          {/* Headline */}
-          <h1
-            className="fs-animate fs-d2"
-            style={{
-              fontFamily: "var(--fs-display)",
-              fontSize: "clamp(2rem, 7vw, 3.2rem)",
-              color: "var(--fs-text)",
-              letterSpacing: "-0.02em",
-              lineHeight: 1.1,
-              marginTop: "1.25rem",
-            }}
-          >
+          <h1 className="nf-h1">
             This split slipped
-            <span
-              style={{
-                display: "block",
-                color: "var(--fs-accent)",
-                fontStyle: "italic",
-              }}
-            >
-              off the ledger.
-            </span>
+            <em>off the ledger.</em>
           </h1>
 
-          {/* Sub */}
-          <p
-            className="fs-animate fs-d3"
-            style={{
-              fontFamily: "var(--fs-ui)",
-              fontSize: "0.9rem",
-              color: "var(--fs-text-2)",
-              lineHeight: 1.7,
-              maxWidth: 420,
-              margin: "1rem auto 0",
-            }}
-          >
-            The page you tried to open doesn&apos;t exist, may have moved, or is no longer available. Let's get you back to an active group.
+          <p className="nf-sub">
+            The page you tried to open doesn&apos;t exist, may have moved, or is no longer available.
+            Let&apos;s get you back to an active group.
           </p>
 
-          {/* Buttons */}
-          <div
-            className="fs-animate fs-d4"
-            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"0.75rem", flexWrap:"wrap", marginTop:"2rem" }}
-          >
-            <Link href="/" className="fs-btn fs-btn-primary fs-btn-md">
-              Go Home
-            </Link>
-            <Link href="/dashboard" className="fs-btn fs-btn-ghost fs-btn-md">
-              Open Dashboard
-            </Link>
+          <div className="nf-btns">
+            <Link href="/"          className="nf-btn-primary">Go Home</Link>
+            <Link href="/dashboard" className="nf-btn-ghost">Open Dashboard</Link>
           </div>
 
-          {/* Divider */}
-          <div
-            className="fs-animate fs-d5"
-            style={{ borderTop:"1px solid var(--fs-border)", marginTop:"2rem", paddingTop:"1.75rem" }}
-          >
-            {/* Tips grid */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:"0.75rem", textAlign:"left" }}>
-              {TIPS.map((tip, i) => (
-                <div
-                  key={tip.label}
-                  className={`fs-animate fs-d${i + 6}`}
-                  style={{
-                    background: "var(--fs-surface-2)",
-                    border: "1px solid var(--fs-border)",
-                    borderRadius: "var(--fs-radius)",
-                    padding: "0.9rem 1rem",
-                  }}
-                >
-                  <p style={{ fontFamily:"var(--fs-ui)", fontSize:"0.8rem", fontWeight:700, color:"var(--fs-text)", marginBottom:"0.3rem" }}>
-                    {tip.label}
-                  </p>
-                  <p style={{ fontFamily:"var(--fs-ui)", fontSize:"0.72rem", color:"var(--fs-muted)", lineHeight:1.55 }}>
-                    {tip.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <hr className="nf-divider" />
+
+          <div className="nf-tips">
+            {TIPS.map((tip) => (
+              <div key={tip.label} className="nf-tip">
+                <p className="nf-tip-title">{tip.label}</p>
+                <p className="nf-tip-desc">{tip.desc}</p>
+              </div>
+            ))}
           </div>
 
-          {/* Footer mono note */}
-          <p
-            className="fs-animate fs-d9"
-            style={{
-              fontFamily: "var(--fs-mono)",
-              fontSize: "9px",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "var(--fs-muted)",
-              marginTop: "1.75rem",
-              opacity: 0.5,
-            }}
-          >
+          <p className="nf-footer">
             FairSplit · Base Sepolia · On-chain expense splitting
           </p>
         </div>
       </div>
-    </div>
+    </>
   );
 }
