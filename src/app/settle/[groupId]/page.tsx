@@ -5,15 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useBalance } from "@/hooks/useBalances";
 import { settleDebt, getGroup, getBalance } from "@/lib/contract";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { useUsernames } from "@/hooks/useUsernames";
 import { parseContractError } from "@/lib/error";
 import Link from "next/link";
@@ -24,6 +15,7 @@ export default function SettlePage() {
   const { address } = useAccount();
   const parsedGroupId = BigInt(groupId as string);
   const { balance } = useBalance(parsedGroupId);
+
   const [creditor, setCreditor] = useState("");
   const [creditors, setCreditors] = useState<
     { address: string; balance: number }[]
@@ -31,12 +23,12 @@ export default function SettlePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
   const creditorAddresses = creditors.map((c) => c.address);
   const { resolve } = useUsernames(creditorAddresses);
 
   useEffect(() => {
     if (!address) return;
-
     async function resolveCreditors() {
       try {
         const result = (await getGroup(parsedGroupId)) as [
@@ -47,48 +39,39 @@ export default function SettlePage() {
           boolean,
         ];
         const members: string[] = Array.isArray(result) ? result[2] : [];
-
         if (!members.length) return;
 
         const balances = await Promise.all(
-          members.map(async (member: string) => {
+          members.map(async (member) => {
             const bal = (await getBalance(parsedGroupId, member)) as bigint;
             return { address: member, balance: Number(bal) / 1_000_000 };
           }),
         );
-
         const positiveMembers = balances.filter(
-          (member) =>
-            member.balance > 0 &&
+          (m) =>
+            m.balance > 0 &&
             address &&
-            member.address.toLowerCase() !== address.toLowerCase(),
+            m.address.toLowerCase() !== address.toLowerCase(),
         );
-
         setCreditors(positiveMembers);
-
-        if (positiveMembers.length === 1) {
+        if (positiveMembers.length === 1)
           setCreditor(positiveMembers[0].address);
-        }
       } catch (e) {
         console.error("Failed to resolve creditors:", e);
       }
     }
-
     resolveCreditors();
   }, [parsedGroupId, address]);
 
   async function handleSettle() {
-    if (!creditor.startsWith("0x")) {
+    if (!creditor.startsWith("0x"))
       return setError("Enter a valid wallet address");
-    }
-
     setLoading(true);
     setError("");
-
     try {
       await settleDebt(parsedGroupId, creditor, Math.abs(balance));
       setSuccess(true);
-      setTimeout(() => router.push(`/groups/${groupId}`), 2000);
+      setTimeout(() => router.push(`/groups/${groupId}`), 2500);
     } catch (e: unknown) {
       setError(parseContractError(e));
     } finally {
@@ -97,123 +80,239 @@ export default function SettlePage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.24),transparent_55%),radial-gradient(circle_at_bottom,rgba(52,211,153,0.24),transparent_55%)] opacity-80" />
+    <div className="fs-page">
+      <div className="fs-mesh" aria-hidden />
+      <div className="fs-texture" aria-hidden />
 
-      <header className="border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-xl items-center gap-3 px-4 py-3 text-sm">
-          <Link
-            href={`/groups/${groupId}`}
-            className="text-slate-400 hover:text-slate-100"
-          >
-            Back
-          </Link>
-          <span className="text-xs text-slate-600">/</span>
-          <h1 className="text-sm font-medium text-slate-100">Settle up</h1>
+      {/* Header */}
+      <header className="fs-header">
+        <div className="fs-header-inner">
+          <div className="flex items-center gap-2">
+            <Link href={`/groups/${groupId}`} className="fs-back">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M9 2L4 7l5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Back
+            </Link>
+            <span className="fs-breadcrumb-sep">/</span>
+            <span className="fs-breadcrumb-title">Settle up</span>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-xl flex-col gap-6 px-4 pb-10 pt-6">
+      {/* Main */}
+      <main className="relative z-10 mx-auto max-w-lg px-4 pb-16 pt-8 sm:px-6">
         {success ? (
-          <Card className="overflow-hidden border-emerald-500/30 bg-linear-to-br from-emerald-500/12 via-slate-900/85 to-slate-900/95 shadow-[0_12px_30px_rgba(16,185,129,0.28)]">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.22),transparent_70%)]" />
-            <CardHeader className="items-center text-center">
-              <div className="inline-flex size-14 items-center justify-center bg-emerald-400/10 text-sm font-semibold uppercase tracking-[0.24em] text-emerald-300 shadow-[0_0_40px_rgba(52,211,153,0.2)]">
-                Paid
-              </div>
-              <div className="space-y-2">
-                <div className="inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-emerald-300">
-                  Settlement complete
-                </div>
-                <CardTitle className="text-2xl tracking-tight text-slate-50">
-                  Payment confirmed onchain
-                </CardTitle>
-                <CardDescription className="max-w-md text-sm leading-6 text-slate-300">
-                  Your balance for this group has been cleared successfully.
-                  We&apos;re taking you back to the group details now.
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/45 p-4">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                    Amount settled
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-emerald-300">
-                    ${Math.abs(balance).toFixed(2)} USDC
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/45 p-4">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                    Status
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-slate-100">
-                    Position settled
-                  </p>
-                </div>
-              </div>
+          /* ── Success state ── */
+          <div
+            className="fs-animate fs-d1 fs-card fs-card-positive"
+            style={{ padding: "2rem 1.75rem", textAlign: "center" }}
+          >
+            {/* Icon */}
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background: "var(--fs-positive-dim)",
+                border: "1.5px solid var(--fs-positive-border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 1.25rem",
+              }}
+            >
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <path
+                  d="M5 14l6 6L23 8"
+                  stroke="var(--fs-positive)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
 
-              <div className="rounded-2xl border border-slate-800/80 bg-slate-950/35 px-4 py-3 text-center text-xs text-slate-400">
-                Redirecting to your group in a moment.
-              </div>
-            </CardContent>
-          </Card>
+            <span
+              className="fs-badge fs-badge-positive"
+              style={{ marginBottom: "0.75rem" }}
+            >
+              Settlement complete
+            </span>
+
+            <h2
+              style={{
+                fontFamily: "var(--fs-display)",
+                fontSize: "1.7rem",
+                color: "var(--fs-text)",
+                letterSpacing: "-0.01em",
+                marginTop: "0.4rem",
+              }}
+            >
+              Payment confirmed
+            </h2>
+            <p
+              className="mt-2 text-sm"
+              style={{
+                color: "var(--fs-text-2)",
+                fontFamily: "var(--fs-ui)",
+                lineHeight: 1.6,
+              }}
+            >
+              Your balance for this group has been cleared on-chain.
+            </p>
+
+            {/* Stats */}
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              {[
+                {
+                  label: "Amount settled",
+                  value: `$${Math.abs(balance).toFixed(2)} USDC`,
+                },
+                { label: "Status", value: "Position cleared" },
+              ].map(({ label, value }) => (
+                <div
+                  key={label}
+                  className="fs-card"
+                  style={{ padding: "0.85rem 1rem", textAlign: "left" }}
+                >
+                  <p className="fs-label" style={{ marginBottom: "0.3rem" }}>
+                    {label}
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "var(--fs-mono)",
+                      fontSize: "0.95rem",
+                      color: "var(--fs-positive)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <p
+              className="mt-5 text-xs"
+              style={{ color: "var(--fs-muted)", fontFamily: "var(--fs-ui)" }}
+            >
+              Redirecting you back to the group…
+            </p>
+          </div>
         ) : (
+          /* ── Settle form ── */
           <>
-            <section className="rounded-3xl border border-rose-500/40 bg-linear-to-br from-rose-500/10 via-slate-900/70 to-slate-900/80 p-5 shadow-[0_5px_25px_rgba(248,113,113,0.45)]">
-              <div className="text-xs font-medium uppercase tracking-wide text-slate-300">
-                You owe
-              </div>
-              <div className="mt-2 text-3xl font-semibold text-rose-300">
-                ${Math.abs(balance).toFixed(2)} USDC
-              </div>
-              <p className="mt-1 text-xs text-slate-300">
-                This is your current net position in this group. You&apos;ll pay
-                this amount in a single onchain transaction.
+            {/* Headline */}
+            <div className="fs-animate fs-d1 mb-7">
+              <h1
+                style={{
+                  fontFamily: "var(--fs-display)",
+                  fontSize: "clamp(1.6rem,5vw,2.2rem)",
+                  color: "var(--fs-text)",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Settle up
+              </h1>
+              <p
+                className="mt-2 text-sm"
+                style={{
+                  color: "var(--fs-text-2)",
+                  fontFamily: "var(--fs-ui)",
+                  lineHeight: 1.6,
+                }}
+              >
+                One on-chain transaction clears your balance in full.
               </p>
-            </section>
+            </div>
 
-            <section className="space-y-4 rounded-3xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.9)] backdrop-blur-xl">
-              <div className="space-y-2">
-                <Label>Pay to</Label>
+            {/* You owe card */}
+            <div
+              className="fs-animate fs-d2 fs-card fs-card-negative mb-5"
+              style={{ padding: "1.25rem 1.4rem" }}
+            >
+              <p className="fs-label">You owe</p>
+              <p
+                className="mt-1 font-bold fs-balance-negative"
+                style={{
+                  fontFamily: "var(--fs-mono)",
+                  fontSize: "2rem",
+                  lineHeight: 1.1,
+                }}
+              >
+                ${Math.abs(balance).toFixed(2)}{" "}
+                <span style={{ fontSize: "1rem", fontWeight: 500 }}>USDC</span>
+              </p>
+              <p
+                className="mt-1.5 text-xs"
+                style={{ color: "var(--fs-muted)", fontFamily: "var(--fs-ui)" }}
+              >
+                Your current net position in this group. Paid in a single
+                transaction.
+              </p>
+            </div>
 
+            {/* Form panel */}
+            <div className="fs-animate fs-d3 fs-panel space-y-5">
+              <div>
+                <label className="fs-label">Pay to</label>
                 {creditors.length > 1 ? (
                   <select
+                    className="fs-select"
                     value={creditor}
                     onChange={(e) => setCreditor(e.target.value)}
-                    className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-500"
                   >
                     <option value="">Select who to pay</option>
                     {creditors.map((c) => (
                       <option key={c.address} value={c.address}>
-                        {resolve(c.address)} - owed ${c.balance.toFixed(2)}
+                        {resolve(c.address)} — owed ${c.balance.toFixed(2)}
                       </option>
                     ))}
                   </select>
                 ) : (
-                  <div className="rounded-md border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-slate-300 break-all">
-                    {creditor ? resolve(creditor) : "Resolving creditor..."}
+                  <div
+                    className="fs-input"
+                    style={{
+                      color: creditor ? "var(--fs-text)" : "var(--fs-muted)",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {creditor ? resolve(creditor) : "Resolving creditor…"}
                   </div>
                 )}
               </div>
 
-              {error && <p className="text-xs text-red-400">{error}</p>}
+              {error && <div className="fs-error">{error}</div>}
 
-              <Button
+              <button
+                type="button"
                 onClick={handleSettle}
                 disabled={loading || !creditor}
-                className="mt-1 h-11 w-full rounded-full bg-linear-to-r from-emerald-500 to-sky-400 text-sm font-medium text-slate-950 shadow-[0_24px_70px_rgba(52,211,153,0.7)] hover:from-emerald-400 hover:to-sky-300"
+                className="fs-btn fs-btn-positive fs-btn-lg fs-btn-full"
               >
                 {loading
-                  ? "Sending USDC..."
+                  ? "Sending USDC…"
                   : `Pay $${Math.abs(balance).toFixed(2)} USDC`}
-              </Button>
+              </button>
 
-              <p className="pt-1 text-center text-[11px] text-slate-400">
-                ~$0.01 gas fee on Base | ~2 second confirmation
+              <p
+                className="text-center"
+                style={{
+                  fontSize: "0.7rem",
+                  color: "var(--fs-muted)",
+                  fontFamily: "var(--fs-ui)",
+                }}
+              >
+                ~$0.01 gas fee on Base · ~2s confirmation
               </p>
-            </section>
+            </div>
           </>
         )}
       </main>

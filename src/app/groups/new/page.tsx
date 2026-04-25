@@ -7,70 +7,50 @@ import { setUsername } from "@/lib/nicknames";
 import { getAccount } from "@wagmi/core";
 import { config } from "@/lib/wagmi";
 import { getAddress, isAddress } from "viem";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { parseContractError } from "@/lib/error";
 import Link from "next/link";
 
 export default function NewGroup() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [creatorName, setCreatorName] = useState("");
-  const [members, setMembers] = useState([{ address: "" }]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [name,         setName]         = useState("");
+  const [creatorName,  setCreatorName]  = useState("");
+  const [members,      setMembers]      = useState([{ address: "" }]);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState("");
 
-  const addMember = () => setMembers([...members, { address: "" }]);
+  const addMember    = () => setMembers([...members, { address: "" }]);
   const updateMember = (i: number, val: string) => {
-    const updated = [...members];
-    updated[i] = { address: val };
-    setMembers(updated);
+    const u = [...members]; u[i] = { address: val }; setMembers(u);
   };
-  const removeMember = (i: number) =>
-    setMembers(members.filter((_, idx) => idx !== i));
+  const removeMember = (i: number) => setMembers(members.filter((_, idx) => idx !== i));
 
   async function handleSubmit() {
     const trimmedName = name.trim();
     if (!trimmedName) return setError("Group name is required");
 
-    const accountAddress = getAccount(config).address;
+    const accountAddress  = getAccount(config).address;
     const connectedAddress = accountAddress ? getAddress(accountAddress) : null;
 
     const uniqueMembers = new Map<string, `0x${string}`>();
-    members.forEach((member) => {
-      const rawAddress = member.address.trim();
-      if (!isAddress(rawAddress)) return;
-      const normalized = getAddress(rawAddress);
-      if (
-        connectedAddress &&
-        normalized.toLowerCase() === connectedAddress.toLowerCase()
-      )
-        return;
-      uniqueMembers.set(normalized.toLowerCase(), normalized);
+    members.forEach((m) => {
+      const raw = m.address.trim();
+      if (!isAddress(raw)) return;
+      const norm = getAddress(raw);
+      if (connectedAddress && norm.toLowerCase() === connectedAddress.toLowerCase()) return;
+      uniqueMembers.set(norm.toLowerCase(), norm);
     });
 
     const validAddresses = Array.from(uniqueMembers.values());
-    if (validAddresses.length === 0) {
-      return setError(
-        "Add at least one valid wallet address different from your own",
-      );
-    }
+    if (validAddresses.length === 0)
+      return setError("Add at least one valid wallet address different from your own");
 
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
       await switchToBaseSepolia();
-
-      // If creator set a username, save it on-chain first
       const trimmedCreatorName = creatorName.trim();
-      if (trimmedCreatorName) {
-        await setUsername(trimmedCreatorName);
-      }
-
+      if (trimmedCreatorName) await setUsername(trimmedCreatorName);
       await createGroup(trimmedName, validAddresses);
-      router.push("/dashboard");
-      router.refresh();
+      router.push("/dashboard"); router.refresh();
     } catch (e: unknown) {
       setError(parseContractError(e));
     } finally {
@@ -79,117 +59,134 @@ export default function NewGroup() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.28),transparent_55%),radial-gradient(circle_at_bottom,rgba(129,140,248,0.28),transparent_55%)] opacity-80" />
+    <div className="fs-page">
+      <div className="fs-mesh"    aria-hidden />
+      <div className="fs-texture" aria-hidden />
 
-      <header className="border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 text-sm">
-          <Link
-            href="/dashboard"
-            className="text-slate-400 hover:text-slate-100"
-          >
-            ← Back
-          </Link>
-          <span className="text-xs text-slate-600">/</span>
-          <h1 className="text-sm font-medium text-slate-100">Create group</h1>
+      {/* Header */}
+      <header className="fs-header">
+        <div className="fs-header-inner">
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="fs-back">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back
+            </Link>
+            <span className="fs-breadcrumb-sep">/</span>
+            <span className="fs-breadcrumb-title">Create group</span>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-10 pt-6">
-        <section className="max-w-xl">
-          <h2 className="text-xl font-semibold tracking-tight">New group</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Give your group a name and add the wallets of everyone who&apos;s
-            splitting with you.
+      {/* Main */}
+      <main className="relative z-10 mx-auto max-w-lg px-4 pb-16 pt-8 sm:px-6">
+
+        {/* Headline */}
+        <div className="fs-animate fs-d1 mb-7">
+          <h1 style={{ fontFamily:"var(--fs-display)", fontSize:"clamp(1.6rem,5vw,2.2rem)", color:"var(--fs-text)", letterSpacing:"-0.01em" }}>
+            New group
+          </h1>
+          <p className="mt-2 text-sm" style={{ color:"var(--fs-text-2)", fontFamily:"var(--fs-ui)", lineHeight:1.6 }}>
+            Give your group a name and add the wallets of everyone splitting with you.
           </p>
-        </section>
+        </div>
 
-        <section className="max-w-xl rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.9)] backdrop-blur-xl">
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <Label>Group name</Label>
-              <Input
-                placeholder="Bali Trip 2025"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
+        {/* Form */}
+        <div className="fs-animate fs-d2 fs-panel space-y-5">
 
-            <div className="space-y-2">
-              <Label>
-                Your username <span className="text-slate-500">(optional)</span>
-              </Label>
-              <Input
-                placeholder="How others will see you"
-                value={creatorName}
-                onChange={(e) => setCreatorName(e.target.value)}
-              />
-              <p className="text-[11px] text-slate-500">
-                Saved on-chain — visible to all group members across all groups.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-end justify-between gap-2">
-                <div className="space-y-1">
-                  <Label>Members (wallet addresses)</Label>
-                  <p className="text-[11px] text-slate-500">
-                    Paste Base-compatible wallet addresses. Invalid rows are
-                    ignored.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addMember}
-                  className="h-8 rounded-full border-slate-700/80 bg-slate-900/60 px-3 text-[11px] text-slate-200 hover:border-sky-400/80 hover:bg-slate-900 hover:text-slate-200"
-                >
-                  + Add member
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {members.map((m, i) => (
-                  <div key={i} className="flex gap-2">
-                    <Input
-                      placeholder="0x..."
-                      value={m.address}
-                      onChange={(e) => updateMember(i, e.target.value)}
-                      className="flex-1"
-                    />
-                    {members.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeMember(i)}
-                        className="shrink-0 text-slate-400"
-                      >
-                        ✕
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {error && <p className="text-xs text-red-400">{error}</p>}
-
-            <Button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="mt-2 h-10 w-full rounded-full bg-linear-to-r from-sky-500 via-emerald-400 to-indigo-500 text-sm font-medium text-slate-950 shadow-[0_20px_60px_rgba(56,189,248,0.7)] hover:from-sky-400 hover:via-emerald-300 hover:to-indigo-400 disabled:opacity-60"
-            >
-              {loading ? "Creating onchain…" : "Create group"}
-            </Button>
-
-            {creatorName.trim() && (
-              <p className="text-center text-[11px] text-slate-500">
-                Setting username requires 2 transactions — username first, then
-                group creation.
-              </p>
-            )}
+          {/* Group name */}
+          <div>
+            <label className="fs-label">Group name</label>
+            <input
+              className="fs-input"
+              placeholder="Bali Trip 2025"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
-        </section>
+
+          {/* Creator username */}
+          <div>
+            <label className="fs-label">
+              Your username{" "}
+              <span style={{ color:"var(--fs-muted)", textTransform:"none", letterSpacing:0, fontWeight:500 }}>
+                (optional)
+              </span>
+            </label>
+            <input
+              className="fs-input"
+              placeholder="How others will see you"
+              value={creatorName}
+              onChange={(e) => setCreatorName(e.target.value)}
+            />
+            <p className="fs-hint">Saved on-chain — visible to all group members across all groups.</p>
+          </div>
+
+          {/* Members */}
+          <div>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div>
+                <label className="fs-label" style={{ marginBottom:0 }}>Members</label>
+                <p className="fs-hint" style={{ marginTop:"0.15rem" }}>Paste Base-compatible wallet addresses. Invalid rows are ignored.</p>
+              </div>
+              <button
+                type="button"
+                onClick={addMember}
+                className="fs-btn fs-btn-ghost fs-btn-sm shrink-0"
+              >
+                + Add
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {members.map((m, i) => (
+                <div key={i} className="flex gap-2">
+                  <input
+                    className="fs-input flex-1"
+                    placeholder="0x…"
+                    value={m.address}
+                    onChange={(e) => updateMember(i, e.target.value)}
+                  />
+                  {members.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeMember(i)}
+                      className="fs-btn fs-btn-subtle fs-btn-sm shrink-0 px-3"
+                      style={{ borderRadius:"var(--fs-radius-sm)" }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && <div className="fs-error">{error}</div>}
+
+          {/* Submit */}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="fs-btn fs-btn-primary fs-btn-lg fs-btn-full"
+          >
+            {loading ? "Creating on-chain…" : "Create group"}
+          </button>
+
+          {creatorName.trim() && (
+            <p className="text-center" style={{ fontSize:"0.7rem", color:"var(--fs-muted)", fontFamily:"var(--fs-ui)" }}>
+              Setting a username requires 2 transactions — username first, then group creation.
+            </p>
+          )}
+
+          {/* Footer note */}
+          <p className="text-center" style={{ fontSize:"0.7rem", color:"var(--fs-muted)", fontFamily:"var(--fs-ui)" }}>
+            ~$0.01 gas fee on Base · ~2s confirmation
+          </p>
+        </div>
       </main>
     </div>
   );
