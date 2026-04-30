@@ -13,7 +13,7 @@ const TYPE_ICON: Record<string, string> = {
 export function NotificationBell() {
   const { notifications, loading, unreadCount, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
