@@ -33,6 +33,11 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "FairSplit",
   description: "Split bills. Settle instantly. On Base.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

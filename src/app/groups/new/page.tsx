@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createGroup, switchToBaseSepolia } from "@/lib/contract";
+import { markGroupsChanged } from "@/lib/groupRefresh";
 import { setUsername } from "@/lib/nicknames";
 import { getAccount } from "@wagmi/core";
 import { config } from "@/lib/wagmi";
@@ -50,6 +51,7 @@ export default function NewGroup() {
       const trimmedCreatorName = creatorName.trim();
       if (trimmedCreatorName) await setUsername(trimmedCreatorName);
       await createGroup(trimmedName, validAddresses);
+      markGroupsChanged();
       router.push("/dashboard"); router.refresh();
     } catch (e: unknown) {
       setError(parseContractError(e));

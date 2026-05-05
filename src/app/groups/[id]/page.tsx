@@ -6,6 +6,7 @@ import { useAccount } from "wagmi";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useBalance } from "@/hooks/useBalances";
 import { fromUSDC, getGroup, deactivateGroup } from "@/lib/contract";
+import { markGroupsChanged } from "@/lib/groupRefresh";
 import { useUsernames } from "@/hooks/useUsernames";
 import { getCategoryById } from "@/lib/categories";
 import { SettlementHistory } from "@/components/SettlementHistory";
@@ -135,6 +136,7 @@ export default function GroupDetail() {
     try {
       if (groupId === null) return;
       await deactivateGroup(groupId);
+      markGroupsChanged();
       router.push("/dashboard"); router.refresh();
     } catch (e: unknown) {
       setDelErr(parseContractError(e)); setDeleting(false); setConfirmDel(false);
